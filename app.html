@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyAI App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a class="nav-logo" href="index.html"><span class="nav-mark">S</span> StudyAI</a>
+            <div class="nav-links">
+                <span id="streakBadge" class="streak-badge">Start your streak today</span>
+                <button class="nav-chip active" data-mode="quiz">Quiz</button>
+                <button class="nav-chip" data-mode="flashcards">Flashcards</button>
+                <button class="nav-chip" data-mode="games">Match</button>
+                <button id="saveBtn" class="share-btn">Save set</button>
+                <button id="shareBtn" class="share-btn">Share set</button>
+                <button id="feedbackBtn" class="feedback-btn">Feedback</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page">
+        <section class="studio">
+            <label class="field-label" for="notesInput">Paste notes</label>
+            <textarea id="notesInput" rows="6" placeholder="Paste your notes here..."></textarea>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="questionCount">Questions</label>
+                    <select id="questionCount">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+                <button id="generateBtn">Generate Study Set</button>
+            </div>
+        </section>
+
+        <section class="workspace">
+            <div class="mode-tabs">
+                <button class="mode-tab active" data-mode="quiz">Quiz</button>
+                <button class="mode-tab" data-mode="flashcards">Flashcards</button>
+                <button class="mode-tab" data-mode="games">Match</button>
+            </div>
+            <div id="output"></div>
+            <div id="flashcards" class="hidden"></div>
+            <div id="matchBox" class="hidden"></div>
+        </section>
+
+        <section class="saved-wrap">
+            <h2>Saved sets</h2>
+            <div id="savedList"></div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <p><a class="ghost-btn" href="privacy.html">Privacy & Rules</a> · <a class="ghost-btn" href="index.html">Home</a></p>
+        </div>
+    </footer>
+
+    <div id="nameModal" class="modal hidden">
+        <div class="modal-card">
+            <h2 id="nameModalTitle">Name this study set</h2>
+            <input id="setNameInput" type="text" placeholder="Example: Biology chapter 1">
+            <p id="nameModalStatus"></p>
+            <div class="flash-actions">
+                <button id="cancelName" class="secondary-btn">Cancel</button>
+                <button id="confirmName">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="feedbackModal" class="modal hidden">
+        <div class="modal-card">
+            <h2>Send feedback</h2>
+            <textarea id="feedbackText" rows="5" placeholder="Type your feedback..."></textarea>
+            <p id="feedbackStatus"></p>
+            <div class="flash-actions">
+                <button id="closeFeedback" class="secondary-btn">Close</button>
+                <button id="submitFeedback">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
