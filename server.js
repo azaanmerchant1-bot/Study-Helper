@@ -5,6 +5,14 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
 
 const app = express();
+const path = require("path");
+
+app.use(express.json({ limit: "1mb" }));
+app.use(express.static(__dirname));
+
+app.get("/", function(req, res) {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
 const PORT = 3000;
 
 app.use(cors());
@@ -12,9 +20,6 @@ app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-app.get("/", (req, res) => {
-    res.send("Backend is running!");
-});
 
 app.post("/feedback", (req, res) => {
     const message = req.body.message;
