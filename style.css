@@ -1,315 +1,68 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyAI — Turn notes into quizzes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a class="nav-logo" href="index.html"><span class="nav-mark">S</span> StudyAI</a>
+            <div class="nav-links">
+                <a class="nav-chip" href="#features">Features</a>
+                <a class="nav-chip" href="#how">How it works</a>
+                <a class="nav-chip" href="privacy.html">Privacy</a>
+                <a class="share-btn" href="app.html">Open app</a>
+            </div>
+        </div>
+    </nav>
 
-body {
-    font-family: 'Outfit', sans-serif;
-    color: #eef1ff;
-    min-height: 100vh;
-    background:
-        radial-gradient(circle at top left, #2a2468 0%, transparent 36%),
-        radial-gradient(circle at bottom right, #164a44 0%, transparent 32%),
-        #10162b;
-}
+    <main class="page home">
+        <section class="hero">
+            <p class="eyebrow">Made by a student, for students</p>
+            <h1>Turn messy notes into a quiz in seconds</h1>
+            <p class="lede">Paste what you need to learn. StudyAI makes a quiz, flashcards, and a match game you can save and share.</p>
+            <div class="hero-actions">
+                <a class="big-btn" href="app.html">Start studying</a>
+                <a class="ghost-btn" href="#how">See how it works</a>
+            </div>
+        </section>
 
-.hidden { display: none !important; }
+        <section id="features" class="info-grid">
+            <article><span class="icon">Q</span><h3>Quiz</h3><p>Score, explanations, and what to work on.</p></article>
+            <article><span class="icon">F</span><h3>Flashcards</h3><p>Mark Known or Still learning.</p></article>
+            <article><span class="icon">M</span><h3>Match</h3><p>Pair questions with answers.</p></article>
+            <article><span class="icon">S</span><h3>Save</h3><p>Name a set and open it later.</p></article>
+            <article><span class="icon">L</span><h3>Share</h3><p>Send a friend the same set.</p></article>
+            <article><span class="icon">5</span><h3>Free daily uses</h3><p>5 AI generations per day.</p></article>
+        </section>
 
-.nav {
-    background: rgba(10, 14, 28, 0.95);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
+        <section id="how" class="how">
+            <h2>How it works</h2>
+            <div class="info-grid">
+                <article><span class="icon">1</span><h3>Paste notes</h3><p>Class notes or a study guide.</p></article>
+                <article><span class="icon">2</span><h3>Generate</h3><p>StudyAI builds your set.</p></article>
+                <article><span class="icon">3</span><h3>Practice</h3><p>Quiz, Flashcards, or Match.</p></article>
+            </div>
+        </section>
 
-.nav-inner, .page, .footer-inner {
-    width: min(1120px, calc(100% - 24px));
-    margin: 0 auto;
-}
+        <section class="cta">
+            <h2>Ready to study smarter?</h2>
+            <p>No account needed yet.</p>
+            <a class="big-btn" href="app.html">Open StudyAI</a>
+        </section>
+    </main>
 
-.nav-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    min-height: 68px;
-    flex-wrap: wrap;
-    padding: 10px 0;
-}
-
-a.nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 800;
-    font-size: 22px;
-    color: #eef1ff;
-    text-decoration: none;
-}
-
-.nav-mark {
-    width: 36px;
-    height: 36px;
-    display: grid;
-    place-items: center;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #7b6cff, #22c3a6);
-    color: white;
-}
-
-.nav-links {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-button, a.nav-chip, a.share-btn, a.big-btn, a.ghost-btn {
-    font-family: inherit;
-    cursor: pointer;
-    border: none;
-    font-weight: 700;
-    text-decoration: none;
-}
-
-a.nav-chip, .nav-chip, .mode-tab {
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.1);
-    color: #eef1ff !important;
-}
-
-.nav-chip.active, .mode-tab.active { background: #7b6cff; }
-
-a.share-btn, .share-btn {
-    background: #22c3a6;
-    color: #062018 !important;
-    padding: 10px 14px;
-    border-radius: 999px;
-}
-
-.feedback-btn, .secondary-btn, .delete-btn, #learningBtn, #closeFeedback, #cancelName {
-    background: rgba(255,255,255,0.12);
-    color: white;
-    padding: 10px 14px;
-    border-radius: 999px;
-}
-
-.streak-badge, .limit-badge {
-    color: #9ef0dc;
-    font-weight: 700;
-    font-size: 13px;
-}
-
-.page { padding: 24px 0 48px; display: grid; gap: 16px; }
-
-.hero, .how, .cta, .studio, .workspace, .saved-wrap, .info-grid article,
-.question-card, .results-box, .work-box, .empty-state, .all-card, .modal-card, .saved-item {
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 20px;
-    padding: 22px;
-}
-
-.hero h1 { font-size: 46px; line-height: 1.15; margin: 8px 0 12px; }
-.eyebrow { color: #9ef0dc; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; }
-.lede, .how p { color: #c5cbe3; font-size: 18px; line-height: 1.6; margin-top: 8px; }
-.hero-actions, .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-
-a.big-btn, #confirmName, #submitFeedback {
-    display: inline-block;
-    background: linear-gradient(135deg, #7b6cff, #22c3a6);
-    color: white !important;
-    padding: 14px 22px;
-    border-radius: 14px;
-    font-size: 16px;
-}
-
-a.ghost-btn {
-    display: inline-block;
-    background: #2a3358;
-    color: white !important;
-    padding: 14px 22px;
-    border-radius: 14px;
-}
-
-.info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.icon {
-    display: inline-grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: #7b6cff;
-    margin-bottom: 8px;
-    font-weight: 800;
-}
-
-.privacy-list {
-    margin: 12px 0 0 20px;
-    color: #c5cbe3;
-    line-height: 1.7;
-}
-
-.field-label, .control-group label { display: block; margin-bottom: 6px; font-weight: 600; }
-
-textarea, select, #setNameInput {
-    width: 100%;
-    background: #0d1326;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 12px;
-    padding: 12px;
-    font: inherit;
-}
-
-textarea { min-height: 140px; }
-#setNameInput { margin: 12px 0; }
-
-.controls { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-top: 12px; }
-#generateBtn {
-    margin-left: auto;
-    background: linear-gradient(135deg, #7b6cff, #22c3a6);
-    color: white;
-    padding: 14px 20px;
-    border-radius: 12px;
-}
-
-.mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-.question-text { font-weight: 700; margin-bottom: 10px; }
-
-.choice-btn, .explain-btn, .flag-btn, .load-btn, .jump-btn, #startMatch, #playAgain,
-#retryBtn, #knowBtn, #startReview, #restartCards, #backToStudy, #seeAllBtn {
-    font-family: inherit;
-    cursor: pointer;
-    border: none;
-    font-weight: 700;
-}
-
-.choice-btn {
-    display: block;
-    width: 100%;
-    text-align: left;
-    margin-bottom: 8px;
-    background: #0d1326;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 12px;
-    padding: 14px;
-}
-
-.choice-btn.correct { background: #1d5a38; }
-.choice-btn.incorrect { background: #6b2a2a; }
-
-.explain-btn, .flag-btn {
-    margin-top: 8px;
-    margin-right: 8px;
-    background: #2a3358;
-    color: white;
-    border-radius: 10px;
-    padding: 10px 12px;
-}
-
-.flag-btn { background: #3a2740; color: #ffd7d7; }
-.explain-box {
-    margin-top: 10px;
-    background: #0d1326;
-    border-radius: 12px;
-    padding: 12px;
-    white-space: pre-wrap;
-    line-height: 1.5;
-    border-left: 4px solid #22c3a6;
-}
-
-.flash-wrap { display: grid; gap: 14px; justify-items: center; }
-.flash-card { width: min(100%, 560px); height: 220px; perspective: 1000px; cursor: pointer; }
-.flash-inner { width: 100%; height: 100%; position: relative; transition: transform .45s; transform-style: preserve-3d; }
-.flash-card.flipped .flash-inner { transform: rotateY(180deg); }
-.flash-front, .flash-back {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    text-align: center;
-    padding: 20px;
-    border-radius: 18px;
-    backface-visibility: hidden;
-    font-size: 20px;
-    font-weight: 700;
-}
-.flash-front { background: #1b2140; }
-.flash-back { background: #1c4a43; transform: rotateY(180deg); }
-.flash-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-
-#knowBtn, .load-btn, .jump-btn, #startMatch, #playAgain, #retryBtn, #startReview, #restartCards, #backToStudy {
-    background: white;
-    color: #10162b;
-    padding: 12px 16px;
-    border-radius: 12px;
-}
-
-#seeAllBtn { background: rgba(255,255,255,0.12); color: white; padding: 12px 16px; border-radius: 12px; }
-.wrong { color: #ffb4b4; }
-.right { color: #8ef0c4; }
-.work-item { background: #0d1326; border-radius: 12px; padding: 12px; margin-top: 8px; }
-
-.match-bar { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-weight: 700; margin-bottom: 12px; }
-.match-help { color: #c5cbe3; margin-bottom: 12px; }
-.match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.match-item {
-    width: 100%;
-    min-height: 72px;
-    text-align: left;
-    margin-bottom: 10px;
-    padding: 16px;
-    border-radius: 16px;
-    border: 3px solid transparent;
-    color: white;
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-}
-.match-item.question { background: #3b3480; }
-.match-item.answer { background: #1b6b5d; }
-.match-item.selected { border-color: #fff; }
-.match-item.matched { opacity: .35; }
-
-.saved-item { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-top: 10px; }
-.saved-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-.footer { padding: 24px 0 36px; color: #c5cbe3; }
-.modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    display: grid;
-    place-items: center;
-    z-index: 20;
-    padding: 16px;
-}
-.modal-card { width: min(520px, 100%); }
-#feedbackStatus, #nameModalStatus { min-height: 20px; margin: 8px 0; color: #9ef0dc; }
-
-@media (max-width: 800px) {
-    .hero h1 { font-size: 30px; }
-    .lede { font-size: 16px; }
-    .info-grid, .match-grid { grid-template-columns: 1fr; }
-    .saved-item { flex-direction: column; align-items: stretch; }
-    .saved-actions, .hero-actions, .cta { width: 100%; }
-    #generateBtn, a.big-btn, a.ghost-btn, .load-btn, .delete-btn, .secondary-btn {
-        width: 100%;
-        margin-left: 0;
-        text-align: center;
-    }
-    .nav-links { width: 100%; }
-    .flash-card { height: 200px; }
-    .flash-front, .flash-back { font-size: 18px; }
-    .page { padding: 16px 0 40px; }
-}
-
-@media (max-width: 480px) {
-    .hero, .how, .cta, .studio, .workspace, .saved-wrap, .question-card {
-        padding: 16px;
-        border-radius: 16px;
-    }
-    h1, .hero h1 { font-size: 26px; }
-    .nav-logo { font-size: 18px; }
-}
+    <footer class="footer">
+        <div class="footer-inner">
+            <p><strong>StudyAI</strong> — made by a student, for students.</p>
+            <p><a class="ghost-btn" href="privacy.html">Privacy & Rules</a></p>
+        </div>
+    </footer>
+</body>
+</html>
