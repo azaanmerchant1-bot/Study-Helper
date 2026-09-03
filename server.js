@@ -120,7 +120,54 @@ One simple study tip.`;
         res.status(500).json({ error: "Could not get an explanation right now." });
     }
 });
+app.post("/upload-pdf", upload.single("pdf"), async function(req, res) {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "Choose a PDF first." });
+        }
 
+        const parsed = await pdfParse(req.file.buffer);
+        const notes = (parsed.text || "").replace(/\s+/g, " ").trim().slice(0, 12000);
+
+        if (notes.length < 50) {
+            return res.status(400).json({ error: "Could not read enough text from that PDF." });
+        }
+
+        const questionCount = parseInt(req.body.questionCount) || 5;
+        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+
+        const prompt = `Based on these notes, create exactly ${questionCount} multiple-choice quiz questions.
+Return ONLY valid JSON, no other text, in this exact format:
+[
+  {
+    "question": "question text here",
+    "choices": ["choice A", "choice B", "choice C", "choice D"],
+    "correctAnswer": "choice A"
+  }
+]
+
+Notes: ${notes}`;
+
+        const result = await model.generateContent(prompt);
+        const cleanedText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+        const quizData = JSON.parse(cleanedText);
+
+        res.json({
+            notes: notes.slice(0, 3000),
+            quiz: quizData.map(function(question) {
+                const shuffledChoices = question.choices.slice().sort(function() { return Math.random() - 0.5; });
+                return {
+                    question: question.question,
+                    choices: shuffledChoices,
+                    correctAnswer: question.correctAnswer
+                };
+            })
+        });
+    } catch (error) {
+        console.error("Error reading PDF:", error);
+        res.status(500).json({ error: "Could not read that PDF. Try a smaller text PDF." });
+    }
+});
 app.listen(PORT, () => {
     console.log("Server is running at http://localhost:" + PORT);
 });
