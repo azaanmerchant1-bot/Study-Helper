@@ -1,3 +1,9 @@
+const multer = require("multer");
+const pdfParse = require("pdf-parse");
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 8 * 1024 * 1024 }
+});
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
