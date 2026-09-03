@@ -1,4 +1,46 @@
 const generateBtn = document.getElementById("generateBtn");
+const pdfBtn = document.getElementById("pdfBtn");
+const pdfInput = document.getElementById("pdfInput");
+
+pdfBtn.addEventListener("click", async function() {
+    if (!pdfInput.files[0]) {
+        showError("Choose a PDF first.");
+        return;
+    }
+    if (getRemaining() <= 0) {
+        showError("You've used today's free generations. Come back tomorrow for 5 more.");
+        return;
+    }
+
+    const form = new FormData();
+    form.append("pdf", pdfInput.files[0]);
+    form.append("questionCount", questionCountInput.value);
+
+    pdfBtn.disabled = true;
+    setMode("quiz");
+    output.innerHTML = "<p class='loading'>Reading your PDF...</p>";
+
+    try {
+        const response = await fetch("/upload-pdf", {
+            method: "POST",
+            body: form
+        });
+        const data = await response.json();
+        if (data.error) {
+            showError(data.error);
+            return;
+        }
+        useOneGeneration();
+        updateLimitDisplay();
+        updateStreak();
+        updateStreakDisplay();
+        applySet(data.quiz || [], data.notes || "");
+    } catch (err) {
+        showError("Could not upload that PDF.");
+    } finally {
+        pdfBtn.disabled = false;
+    }
+});
 const output = document.getElementById("output");
 const flashcardsBox = document.getElementById("flashcards");
 const matchBox = document.getElementById("matchBox");
