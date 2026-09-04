@@ -482,12 +482,18 @@ function openNameModal(mode, id) {
         if (set) setNameInput.value = set.name;
     }
     nameModal.classList.remove("hidden");
+    requestAnimationFrame(function() {
+        nameModal.classList.add("open");
+    });
     setNameInput.focus();
 }
 
 function closeNameModal() {
-    nameModal.classList.add("hidden");
-    renameId = null;
+    nameModal.classList.remove("open");
+    setTimeout(function() {
+        nameModal.classList.add("hidden");
+        renameId = null;
+    }, 200);
 }
 
 function confirmNameModal() {
