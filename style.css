@@ -298,3 +298,20 @@ textarea { min-height: 140px; }
     .hero, .how, .cta, .studio, .workspace, .saved-wrap, .question-card { padding: 16px; }
     .hero h1 { font-size: 26px; }
 }
+.modal {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.modal.open {
+    opacity: 1;
+}
+
+.modal .modal-card {
+    transform: translateY(16px) scale(0.96);
+    transition: transform 0.2s ease;
+}
+
+.modal.open .modal-card {
+    transform: translateY(0) scale(1);
+}
