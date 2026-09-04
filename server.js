@@ -25,16 +25,12 @@ app.get("/", function(req, res) {
 
 app.post("/feedback", function(req, res) {
     const message = req.body.message;
-
     if (!message || !message.trim()) {
         return res.status(400).json({ error: "Feedback can't be empty." });
     }
-
     const entry = "[" + new Date().toISOString() + "] " + message.trim() + "\n---\n";
-
     fs.appendFile("feedback.txt", entry, function(err) {
         if (err) {
-            console.error("Error saving feedback:", err);
             return res.status(500).json({ error: "Could not save feedback." });
         }
         res.json({ success: true });
@@ -43,35 +39,75 @@ app.post("/feedback", function(req, res) {
 
 app.post("/generate-quiz", async function(req, res) {
     try {
-        const notes = req.body.notes;
-        const questionCount = parseInt(req.body.questionCount) || 5;
-        const quiz = await makeQuiz(notes, questionCount);
+        const quiz = await makeQuiz(req.body.notes, parseInt(req.body.questionCount) || 5);
         res.json({ quiz: quiz });
     } catch (error) {
-        console.error("Error generating quiz:", error);
+        console.error(error);
         res.status(500).json({ error: "The AI is a bit busy right now. Click below to try again." });
     }
 });
 
 app.post("/upload-pdf", upload.single("pdf"), async function(req, res) {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: "Choose a PDF first." });
-        }
-
+        if (!req.file) return res.status(400).json({ error: "Choose a PDF first." });
         const parsed = await pdfParse(req.file.buffer);
         const notes = (parsed.text || "").replace(/\s+/g, " ").trim().slice(0, 12000);
-
-        if (notes.length < 50) {
-            return res.status(400).json({ error: "Could not read enough text from that PDF." });
-        }
-
-        const questionCount = parseInt(req.body.questionCount) || 5;
-        const quiz = await makeQuiz(notes, questionCount);
+        if (notes.length < 50) return res.status(400).json({ error: "Could not read enough text from that PDF." });
+        const quiz = await makeQuiz(notes, parseInt(req.body.questionCount) || 5);
         res.json({ notes: notes.slice(0, 3000), quiz: quiz });
     } catch (error) {
-        console.error("Error reading PDF:", error);
+        console.error(error);
         res.status(500).json({ error: "Could not read that PDF. Try a smaller text PDF." });
+    }
+});
+
+app.post("/upload-photo", upload.single("photo"), async function(req, res) {
+    try {
+        if (!req.file) return res.status(400).json({ error: "Choose a photo first." });
+
+        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+        const questionCount = parseInt(req.body.questionCount) || 5;
+
+        const result = await model.generateContent([
+            {
+                text: `Read the textbook page in this photo.
+First write short study notes from the page.
+Then create ${questionCount} multiple-choice questions from those notes.
+Return ONLY valid JSON in this exact format:
+{
+  "notes": "short notes here",
+  "quiz": [
+    {
+      "question": "question text",
+      "choices": ["A", "B", "C", "D"],
+      "correctAnswer": "A"
+    }
+  ]
+}`
+            },
+            {
+                inlineData: {
+                    mimeType: req.file.mimetype || "image/jpeg",
+                    data: req.file.buffer.toString("base64")
+                }
+            }
+        ]);
+
+        const cleaned = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+        const quiz = (parsed.quiz || []).map(function(question) {
+            const shuffledChoices = (question.choices || []).slice().sort(function() { return Math.random() - 0.5; });
+            return {
+                question: question.question,
+                choices: shuffledChoices,
+                correctAnswer: question.correctAnswer
+            };
+        });
+
+        res.json({ notes: parsed.notes || "", quiz: quiz });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Could not read that photo. Use a clear picture of one page." });
     }
 });
 
@@ -81,35 +117,23 @@ app.post("/explain", async function(req, res) {
         const chosen = req.body.chosen || "";
         const correctAnswer = req.body.correctAnswer || "";
         const notes = (req.body.notes || "").slice(0, 4000);
-
         if (!question || !chosen || !correctAnswer) {
             return res.status(400).json({ error: "Missing question info." });
         }
-
         const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-        const prompt = `You are a tutor helping a student learn from a missed quiz question.
-Use the student's notes if they help. Do not invent facts that are not in the notes or the question.
-
+        const prompt = `You are a tutor.
 Question: ${question}
 Student chose: ${chosen}
 Correct answer: ${correctAnswer}
 Notes: ${notes || "No notes given."}
 
-Write exactly 3 short parts:
-
+Write:
 Why it's correct:
-One or two sentences.
-
 Why your answer doesn't fit:
-One or two sentences. Be specific, not "it is a different idea."
-
-How to remember it:
-One simple study tip.`;
-
+How to remember it:`;
         const result = await model.generateContent(prompt);
         res.json({ explanation: result.response.text().trim() });
     } catch (error) {
-        console.error("Error generating explanation:", error);
         res.status(500).json({ error: "Could not get an explanation right now." });
     }
 });
@@ -117,7 +141,6 @@ One simple study tip.`;
 async function makeQuiz(notes, questionCount) {
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
     const prompt = `Based on these notes, create exactly ${questionCount} multiple-choice quiz questions.
-If the notes are too short to make that many unique, meaningful questions, create as many good questions as reasonably possible instead of repeating or making up unrelated content.
 Return ONLY valid JSON, no other text, in this exact format:
 [
   {
@@ -126,13 +149,10 @@ Return ONLY valid JSON, no other text, in this exact format:
     "correctAnswer": "choice A"
   }
 ]
-
 Notes: ${notes}`;
-
     const result = await model.generateContent(prompt);
     const cleanedText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
     const quizData = JSON.parse(cleanedText);
-
     return quizData.map(function(question) {
         const shuffledChoices = question.choices.slice().sort(function() { return Math.random() - 0.5; });
         return {
