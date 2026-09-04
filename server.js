@@ -1,19 +1,19 @@
-const multer = require("multer");
-const pdfParse = require("pdf-parse");
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 8 * 1024 * 1024 }
-});
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
 const path = require("path");
+const multer = require("multer");
+const pdfParse = require("pdf-parse");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 8 * 1024 * 1024 }
+});
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
@@ -23,7 +23,7 @@ app.get("/", function(req, res) {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-app.post("/feedback", (req, res) => {
+app.post("/feedback", function(req, res) {
     const message = req.body.message;
 
     if (!message || !message.trim()) {
@@ -41,47 +41,41 @@ app.post("/feedback", (req, res) => {
     });
 });
 
-app.post("/generate-quiz", async (req, res) => {
+app.post("/generate-quiz", async function(req, res) {
     try {
         const notes = req.body.notes;
         const questionCount = parseInt(req.body.questionCount) || 5;
-        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-
-        const prompt = `Based on these notes, create exactly ${questionCount} multiple-choice quiz questions.
-If the notes are too short to make that many unique, meaningful questions, create as many good questions as reasonably possible instead of repeating or making up unrelated content.
-Return ONLY valid JSON, no other text, in this exact format:
-[
-  {
-    "question": "question text here",
-    "choices": ["choice A", "choice B", "choice C", "choice D"],
-    "correctAnswer": "choice A"
-  }
-]
-
-Notes: ${notes}`;
-
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
-        const cleanedText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-        const quizData = JSON.parse(cleanedText);
-
-        const shuffledQuiz = quizData.map(function(question) {
-            const shuffledChoices = question.choices.slice().sort(function() { return Math.random() - 0.5; });
-            return {
-                question: question.question,
-                choices: shuffledChoices,
-                correctAnswer: question.correctAnswer
-            };
-        });
-
-        res.json({ quiz: shuffledQuiz });
+        const quiz = await makeQuiz(notes, questionCount);
+        res.json({ quiz: quiz });
     } catch (error) {
         console.error("Error generating quiz:", error);
         res.status(500).json({ error: "The AI is a bit busy right now. Click below to try again." });
     }
 });
 
-app.post("/explain", async (req, res) => {
+app.post("/upload-pdf", upload.single("pdf"), async function(req, res) {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "Choose a PDF first." });
+        }
+
+        const parsed = await pdfParse(req.file.buffer);
+        const notes = (parsed.text || "").replace(/\s+/g, " ").trim().slice(0, 12000);
+
+        if (notes.length < 50) {
+            return res.status(400).json({ error: "Could not read enough text from that PDF." });
+        }
+
+        const questionCount = parseInt(req.body.questionCount) || 5;
+        const quiz = await makeQuiz(notes, questionCount);
+        res.json({ notes: notes.slice(0, 3000), quiz: quiz });
+    } catch (error) {
+        console.error("Error reading PDF:", error);
+        res.status(500).json({ error: "Could not read that PDF. Try a smaller text PDF." });
+    }
+});
+
+app.post("/explain", async function(req, res) {
     try {
         const question = req.body.question || "";
         const chosen = req.body.chosen || "";
@@ -93,7 +87,6 @@ app.post("/explain", async (req, res) => {
         }
 
         const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-
         const prompt = `You are a tutor helping a student learn from a missed quiz question.
 Use the student's notes if they help. Do not invent facts that are not in the notes or the question.
 
@@ -120,23 +113,11 @@ One simple study tip.`;
         res.status(500).json({ error: "Could not get an explanation right now." });
     }
 });
-app.post("/upload-pdf", upload.single("pdf"), async function(req, res) {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: "Choose a PDF first." });
-        }
 
-        const parsed = await pdfParse(req.file.buffer);
-        const notes = (parsed.text || "").replace(/\s+/g, " ").trim().slice(0, 12000);
-
-        if (notes.length < 50) {
-            return res.status(400).json({ error: "Could not read enough text from that PDF." });
-        }
-
-        const questionCount = parseInt(req.body.questionCount) || 5;
-        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-
-        const prompt = `Based on these notes, create exactly ${questionCount} multiple-choice quiz questions.
+async function makeQuiz(notes, questionCount) {
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const prompt = `Based on these notes, create exactly ${questionCount} multiple-choice quiz questions.
+If the notes are too short to make that many unique, meaningful questions, create as many good questions as reasonably possible instead of repeating or making up unrelated content.
 Return ONLY valid JSON, no other text, in this exact format:
 [
   {
@@ -148,26 +129,20 @@ Return ONLY valid JSON, no other text, in this exact format:
 
 Notes: ${notes}`;
 
-        const result = await model.generateContent(prompt);
-        const cleanedText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
-        const quizData = JSON.parse(cleanedText);
+    const result = await model.generateContent(prompt);
+    const cleanedText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+    const quizData = JSON.parse(cleanedText);
 
-        res.json({
-            notes: notes.slice(0, 3000),
-            quiz: quizData.map(function(question) {
-                const shuffledChoices = question.choices.slice().sort(function() { return Math.random() - 0.5; });
-                return {
-                    question: question.question,
-                    choices: shuffledChoices,
-                    correctAnswer: question.correctAnswer
-                };
-            })
-        });
-    } catch (error) {
-        console.error("Error reading PDF:", error);
-        res.status(500).json({ error: "Could not read that PDF. Try a smaller text PDF." });
-    }
-});
-app.listen(PORT, () => {
+    return quizData.map(function(question) {
+        const shuffledChoices = question.choices.slice().sort(function() { return Math.random() - 0.5; });
+        return {
+            question: question.question,
+            choices: shuffledChoices,
+            correctAnswer: question.correctAnswer
+        };
+    });
+}
+
+app.listen(PORT, function() {
     console.log("Server is running at http://localhost:" + PORT);
 });
