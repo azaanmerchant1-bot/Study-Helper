@@ -14,6 +14,8 @@ const setNameInput = document.getElementById("setNameInput");
 const nameModalStatus = document.getElementById("nameModalStatus");
 const pdfBtn = document.getElementById("pdfBtn");
 const pdfInput = document.getElementById("pdfInput");
+const photoBtn = document.getElementById("photoBtn");
+const photoInput = document.getElementById("photoInput");
 const DAILY_LIMIT = 5;
 const USAGE_KEY = "studyai_usage_v2";
 
@@ -199,7 +201,36 @@ pdfBtn.addEventListener("click", async function() {
         pdfBtn.disabled = false;
     }
 });
-
+photoBtn.addEventListener("click", async function() {
+    if (!photoInput.files[0]) {
+        showError("Choose a page photo first.");
+        return;
+    }
+    if (getRemaining() <= 0) {
+        showError("You've used today's free generations. Come back tomorrow for 5 more.");
+        return;
+    }
+    const form = new FormData();
+    form.append("photo", photoInput.files[0]);
+    form.append("questionCount", questionCountInput.value);
+    photoBtn.disabled = true;
+    setMode("quiz");
+    output.innerHTML = "<p class='loading'>Reading your page photo...</p>";
+    try {
+        const response = await fetch("/upload-photo", { method: "POST", body: form });
+        const data = await response.json();
+        if (data.error) { showError(data.error); return; }
+        useOneGeneration();
+        updateLimitDisplay();
+        updateStreak();
+        updateStreakDisplay();
+        applySet(data.quiz || [], data.notes || "");
+    } catch (err) {
+        showError("Could not upload that photo.");
+    } finally {
+        photoBtn.disabled = false;
+    }
+});
 function applySet(quiz, notesText) {
     lastQuiz = quiz;
     allCards = lastQuiz.map(function(q, i) { return { id: i, front: q.question, back: q.correctAnswer }; });
