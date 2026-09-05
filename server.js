@@ -177,6 +177,53 @@ app.post("/topic-quiz", async function(req, res) {
         const prompt = `Create ${questionCount} original multiple-choice questions about "${topic}".
 Audience: ${gradeLevel}
 Difficulty: ${difficulty}
+Write original school practice questions.
+Return ONLY valid JSON. No markdown. No extra words.
+Format:
+[{"question":"Q","choices":["A","B","C","D"],"correctAnswer":"A"}]`;
+
+        const result = await model.generateContent(prompt);
+        let text = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+        const start = text.indexOf("[");
+        const end = text.lastIndexOf("]");
+        if (start !== -1 && end !== -1) {
+            text = text.slice(start, end + 1);
+        }
+
+        const quizData = JSON.parse(text);
+        const quiz = quizData.map(function(question) {
+            const choices = (question.choices || []).slice().sort(function() { return Math.random() - 0.5; });
+            return {
+                question: question.question,
+                choices: choices,
+                correctAnswer: question.correctAnswer
+            };
+        });
+
+        if (!quiz.length) {
+            return res.status(500).json({ error: "Could not make that topic quiz. Try a simpler topic." });
+        }
+
+        res.json({ quiz: quiz, notes: topic + " · " + gradeLevel + " · " + difficulty });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Could not make that topic quiz. Try again." });
+    }
+});
+    try {
+        const topic = (req.body.topic || "").trim();
+        const gradeLevel = req.body.gradeLevel || "Grade 10";
+        const difficulty = req.body.difficulty || "medium";
+        const questionCount = parseInt(req.body.questionCount) || 5;
+
+        if (!topic) {
+            return res.status(400).json({ error: "Type a topic first." });
+        }
+
+        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+        const prompt = `Create ${questionCount} original multiple-choice questions about "${topic}".
+Audience: ${gradeLevel}
+Difficulty: ${difficulty}
 Do not copy a copyrighted textbook. Write original school-level practice questions.
 Return ONLY valid JSON in this exact format:
 [
