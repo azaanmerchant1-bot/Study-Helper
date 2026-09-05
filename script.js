@@ -14,6 +14,10 @@ const setNameInput = document.getElementById("setNameInput");
 const nameModalStatus = document.getElementById("nameModalStatus");
 const pdfBtn = document.getElementById("pdfBtn");
 const pdfInput = document.getElementById("pdfInput");
+const topicBtn = document.getElementById("topicBtn");
+const topicInput = document.getElementById("topicInput");
+const gradeLevel = document.getElementById("gradeLevel");
+const difficulty = document.getElementById("difficulty");
 const photoBtn = document.getElementById("photoBtn");
 const photoInput = document.getElementById("photoInput");
 const DAILY_LIMIT = 5;
@@ -199,6 +203,43 @@ pdfBtn.addEventListener("click", async function() {
         showError("Could not upload that PDF.");
     } finally {
         pdfBtn.disabled = false;
+    }
+});
+topicBtn.addEventListener("click", async function() {
+    if (getRemaining() <= 0) {
+        showError("You've used today's free generations. Come back tomorrow for 5 more.");
+        return;
+    }
+    const topic = topicInput.value.trim();
+    if (!topic) {
+        showError("Type a topic first.");
+        return;
+    }
+    topicBtn.disabled = true;
+    setMode("quiz");
+    output.innerHTML = "<p class='loading'>Making your topic quiz...</p>";
+    try {
+        const response = await fetch("/topic-quiz", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                topic: topic,
+                gradeLevel: gradeLevel.value,
+                difficulty: difficulty.value,
+                questionCount: questionCountInput.value
+            })
+        });
+        const data = await response.json();
+        if (data.error) { showError(data.error); return; }
+        useOneGeneration();
+        updateLimitDisplay();
+        updateStreak();
+        updateStreakDisplay();
+        applySet(data.quiz || [], data.notes || topic);
+    } catch (err) {
+        showError("Could not make that topic quiz.");
+    } finally {
+        topicBtn.disabled = false;
     }
 });
 photoBtn.addEventListener("click", async function() {
