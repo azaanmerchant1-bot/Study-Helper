@@ -16,6 +16,7 @@
             <div class="nav-links">
                 <a class="nav-chip" href="#features">Features</a>
                 <a class="nav-chip" href="#how">How it works</a>
+                <a class="nav-chip" href="#modes">Study modes</a>
                 <a class="nav-chip" href="privacy.html">Privacy</a>
                 <a class="share-btn" href="app.html">Open app</a>
             </div>
@@ -23,10 +24,10 @@
     </nav>
 
     <main class="page home">
-        <section class="hero">
+        <section class="hero reveal">
             <p class="eyebrow">Made by a student, for students</p>
             <h1>Turn messy notes into a quiz in seconds</h1>
-            <p class="lede">Paste what you need to learn. StudyAI makes a quiz, flashcards, and a match game you can save and share.</p>
+            <p class="lede">Paste notes, upload a PDF, or snap one textbook page. StudyAI builds a quiz, flashcards, and a match game.</p>
             <div class="hero-actions">
                 <a class="big-btn" href="app.html">Start studying</a>
                 <a class="ghost-btn" href="#how">See how it works</a>
@@ -34,26 +35,35 @@
         </section>
 
         <section id="features" class="info-grid">
-            <article><span class="icon">Q</span><h3>Quiz</h3><p>Score, explanations, and what to work on.</p></article>
-            <article><span class="icon">F</span><h3>Flashcards</h3><p>Mark Known or Still learning.</p></article>
-            <article><span class="icon">M</span><h3>Match</h3><p>Pair questions with answers.</p></article>
-            <article><span class="icon">S</span><h3>Save</h3><p>Name a set and open it later.</p></article>
-            <article><span class="icon">L</span><h3>Share</h3><p>Send a friend the same set.</p></article>
-            <article><span class="icon">5</span><h3>Free daily uses</h3><p>5 AI generations per day.</p></article>
+            <article class="reveal"><span class="icon">Q</span><h3>Quiz</h3><p>Get a percent score and what to work on.</p></article>
+            <article class="reveal"><span class="icon">F</span><h3>Flashcards</h3><p>Flip cards and mark Known or Still learning.</p></article>
+            <article class="reveal"><span class="icon">M</span><h3>Match</h3><p>Race to pair questions with answers.</p></article>
+            <article class="reveal"><span class="icon">S</span><h3>Save</h3><p>Name a set and open it later.</p></article>
+            <article class="reveal"><span class="icon">P</span><h3>PDF + photo</h3><p>Upload a file or one clear page photo.</p></article>
+            <article class="reveal"><span class="icon">5</span><h3>Free daily uses</h3><p>5 AI generations per day.</p></article>
         </section>
 
-        <section id="how" class="how">
+        <section id="how" class="how reveal">
             <h2>How it works</h2>
             <div class="info-grid">
-                <article><span class="icon">1</span><h3>Paste notes</h3><p>Class notes or a study guide.</p></article>
-                <article><span class="icon">2</span><h3>Generate</h3><p>StudyAI builds your set.</p></article>
-                <article><span class="icon">3</span><h3>Practice</h3><p>Quiz, Flashcards, or Match.</p></article>
+                <article><span class="icon">1</span><h3>Add material</h3><p>Paste notes, upload a PDF, or photograph one page.</p></article>
+                <article><span class="icon">2</span><h3>Generate</h3><p>StudyAI turns it into a study set.</p></article>
+                <article><span class="icon">3</span><h3>Practice</h3><p>Use Quiz, Flashcards, or Match, then save.</p></article>
             </div>
         </section>
 
-        <section class="cta">
+        <section id="modes" class="how reveal">
+            <h2>Study like the best tools</h2>
+            <div class="info-grid">
+                <article><h3>Active recall</h3><p>Quizzes and cards make you remember, not just reread.</p></article>
+                <article><h3>Instant feedback</h3><p>See what you missed and why it was wrong.</p></article>
+                <article><h3>Play to review</h3><p>Match turns the same set into a timed game.</p></article>
+            </div>
+        </section>
+
+        <section class="cta reveal">
             <h2>Ready to study smarter?</h2>
-            <p>No account needed yet.</p>
+            <p>No account needed yet. Just add notes and go.</p>
             <a class="big-btn" href="app.html">Open StudyAI</a>
         </section>
     </main>
@@ -64,5 +74,15 @@
             <p><a class="ghost-btn" href="privacy.html">Privacy & Rules</a></p>
         </div>
     </footer>
+
+    <script>
+        const items = document.querySelectorAll(".reveal");
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) entry.target.classList.add("show");
+            });
+        }, { threshold: 0.15 });
+        items.forEach(function(item) { observer.observe(item); });
+    </script>
 </body>
 </html>
