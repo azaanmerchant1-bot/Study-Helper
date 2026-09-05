@@ -290,6 +290,16 @@ function resetFlashProgress() {
 function showError(message) {
     setMode("quiz");
     output.innerHTML = "<div class='empty-state'><p>" + message + "</p><button id='retryBtn'>Try Again</button></div>";
+    document.getElementById("retryBtn").addEventListener("click", function() {
+        if (topicInput.value.trim()) {
+            topicBtn.click();
+        } else {
+            generateBtn.click();
+        }
+    });
+}
+    setMode("quiz");
+    output.innerHTML = "<div class='empty-state'><p>" + message + "</p><button id='retryBtn'>Try Again</button></div>";
     document.getElementById("retryBtn").addEventListener("click", function() { generateBtn.click(); });
 }
 
