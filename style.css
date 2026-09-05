@@ -344,3 +344,13 @@ textarea { min-height: 140px; }
 }
 
 html { scroll-behavior: smooth; }
+#topicInput {
+    width: 100%;
+    background: #0d1326;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 12px;
+    padding: 12px;
+    font: inherit;
+    margin-bottom: 10px;
+}
