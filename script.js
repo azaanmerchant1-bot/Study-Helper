@@ -339,10 +339,11 @@ function addFlagButton(card, question) {
 
 function showQuizResults(quiz) {
     const correctCount = quizAnswers.filter(function(a) { return a.isCorrect; }).length;
+    const percent = quiz.length ? Math.round((correctCount / quiz.length) * 100) : 0;
     const missed = quizAnswers.filter(function(a) { return !a.isCorrect; });
     const box = document.createElement("div");
     box.className = "results-box";
-    box.innerHTML = "<h2>Quiz score: " + correctCount + " / " + quiz.length + "</h2>" +
+    box.innerHTML = "<h2>Quiz score: " + correctCount + " / " + quiz.length + " (" + percent + "%)</h2>" +
         (missed.length ? "<div class='work-box'><h3>What to work on</h3>" + missed.map(function(item) {
             return "<div class='work-item'><p><strong>" + escapeHtml(item.question) + "</strong></p><p class='wrong'>Your answer: " + escapeHtml(item.chosen) + "</p><p class='right'>Correct: " + escapeHtml(item.correctAnswer) + "</p></div>";
         }).join("") + "</div>" : "<p>Perfect score.</p>");
@@ -359,22 +360,23 @@ function renderFlashcards() {
         return;
     }
     if (showingAllCards) return renderAllCards();
+    const knownPercent = allCards.length ? Math.round((knownCards.length / allCards.length) * 100) : 0;
     if (!queue.length) {
         if (learningCards.length) {
             queue = learningCards.slice();
             learningCards = [];
-            flashcardsBox.innerHTML = "<div class='empty-state'><p>You knew " + knownCards.length + " of " + allCards.length + ".</p><div class='flash-actions'><button id='startReview'>Review those cards</button><button id='seeAllBtn'>See all cards</button></div></div>";
+            flashcardsBox.innerHTML = "<div class='empty-state'><p>You knew " + knownCards.length + " of " + allCards.length + " (" + knownPercent + "%).</p><div class='flash-actions'><button id='startReview'>Review those cards</button><button id='seeAllBtn'>See all cards</button></div></div>";
             document.getElementById("startReview").addEventListener("click", renderFlashcards);
             document.getElementById("seeAllBtn").addEventListener("click", function() { showingAllCards = true; renderAllCards(); });
             return;
         }
-        flashcardsBox.innerHTML = "<div class='empty-state'><p>Finished. You knew " + knownCards.length + " of " + allCards.length + ".</p><div class='flash-actions'><button id='restartCards'>Study again</button><button id='seeAllBtn'>See all cards</button></div></div>";
+        flashcardsBox.innerHTML = "<div class='empty-state'><p>Finished. You knew " + knownCards.length + " of " + allCards.length + " (" + knownPercent + "%).</p><div class='flash-actions'><button id='restartCards'>Study again</button><button id='seeAllBtn'>See all cards</button></div></div>";
         document.getElementById("restartCards").addEventListener("click", function() { resetFlashProgress(); renderFlashcards(); });
         document.getElementById("seeAllBtn").addEventListener("click", function() { showingAllCards = true; renderAllCards(); });
         return;
     }
     const card = queue[0];
-    flashcardsBox.innerHTML = "<div class='flash-wrap'><p class='flash-progress'>Known " + knownCards.length + " · Left " + (queue.length + learningCards.length) + "</p><div class='flash-card' id='flashCard'><div class='flash-inner'><div class='flash-front'>" + escapeHtml(card.front) + "</div><div class='flash-back'>" + escapeHtml(card.back) + "</div></div></div><div class='flash-actions'><button id='learningBtn'>Still learning</button><button id='knowBtn'>I know this</button><button id='seeAllBtn'>See all cards</button></div></div>";
+    flashcardsBox.innerHTML = "<div class='flash-wrap'><p class='flash-progress'>Known " + knownCards.length + " · Left " + (queue.length + learningCards.length) + " · " + knownPercent + "%</p><div class='flash-card' id='flashCard'><div class='flash-inner'><div class='flash-front'>" + escapeHtml(card.front) + "</div><div class='flash-back'>" + escapeHtml(card.back) + "</div></div></div><div class='flash-actions'><button id='learningBtn'>Still learning</button><button id='knowBtn'>I know this</button><button id='seeAllBtn'>See all cards</button></div></div>";
     document.getElementById("flashCard").addEventListener("click", function() { this.classList.toggle("flipped"); });
     document.getElementById("knowBtn").addEventListener("click", function() { knownCards.push(queue.shift()); renderFlashcards(); });
     document.getElementById("learningBtn").addEventListener("click", function() {
@@ -484,7 +486,9 @@ function finishMatch() {
         bestTime = time;
         localStorage.setItem("studyai_best_match", String(bestTime));
     }
-    matchBox.innerHTML = "<div class='results-box'><h2>Match complete</h2><p>Time: " + formatTime(time) + "</p><p>Wrong matches: " + matchWrong + "</p><p>Best combo: " + maxCombo + "</p>" +
+    const attempts = questions.length + matchWrong;
+    const percent = attempts ? Math.round((questions.length / attempts) * 100) : 0;
+    matchBox.innerHTML = "<div class='results-box'><h2>Match complete</h2><p>Time: " + formatTime(time) + "</p><p>Accuracy: " + percent + "%</p><p>Wrong matches: " + matchWrong + "</p><p>Best combo: " + maxCombo + "</p>" +
         (missedPairs.length ? "<div class='work-box'><h3>What to work on</h3>" + missedPairs.map(function(p) {
             return "<div class='work-item'><p><strong>" + escapeHtml(p.front) + "</strong></p><p class='right'>" + escapeHtml(p.back) + "</p></div>";
         }).join("") + "</div>" : "<p>Perfect accuracy.</p>") +
