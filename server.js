@@ -162,7 +162,48 @@ Notes: ${notes}`;
         };
     });
 }
+app.post("/topic-quiz", async function(req, res) {
+    try {
+        const topic = (req.body.topic || "").trim();
+        const gradeLevel = req.body.gradeLevel || "Grade 10";
+        const difficulty = req.body.difficulty || "medium";
+        const questionCount = parseInt(req.body.questionCount) || 5;
 
+        if (!topic) {
+            return res.status(400).json({ error: "Type a topic first." });
+        }
+
+        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+        const prompt = `Create ${questionCount} original multiple-choice questions about "${topic}".
+Audience: ${gradeLevel}
+Difficulty: ${difficulty}
+Do not copy a copyrighted textbook. Write original school-level practice questions.
+Return ONLY valid JSON in this exact format:
+[
+  {
+    "question": "question text here",
+    "choices": ["choice A", "choice B", "choice C", "choice D"],
+    "correctAnswer": "choice A"
+  }
+]`;
+
+        const result = await model.generateContent(prompt);
+        const cleanedText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+        const quizData = JSON.parse(cleanedText);
+        const quiz = quizData.map(function(question) {
+            const shuffledChoices = question.choices.slice().sort(function() { return Math.random() - 0.5; });
+            return {
+                question: question.question,
+                choices: shuffledChoices,
+                correctAnswer: question.correctAnswer
+            };
+        });
+        res.json({ quiz: quiz, notes: topic + " · " + gradeLevel + " · " + difficulty });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Could not make that topic quiz." });
+    }
+});
 app.listen(PORT, function() {
     console.log("Server is running at http://localhost:" + PORT);
 });
