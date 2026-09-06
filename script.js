@@ -298,11 +298,6 @@ function showError(message) {
         }
     });
 }
-    setMode("quiz");
-    output.innerHTML = "<div class='empty-state'><p>" + message + "</p><button id='retryBtn'>Try Again</button></div>";
-    document.getElementById("retryBtn").addEventListener("click", function() { generateBtn.click(); });
-}
-
 function displayQuiz(quiz) {
     output.innerHTML = "";
     quizAnswers = [];
