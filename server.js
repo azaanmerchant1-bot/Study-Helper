@@ -211,7 +211,36 @@ Format:
         res.status(500).json({ error: "Could not make that topic quiz. Try again." });
     }
 });
+const visitsFile = path.join(__dirname, "visits.json");
+const STATS_KEY = process.env.STATS_KEY || "zane-only";
 
+function readVisits() {
+    try {
+        return JSON.parse(fs.readFileSync(visitsFile, "utf8")).count || 0;
+    } catch (err) {
+        return 0;
+    }
+}
+
+function addVisit() {
+    const count = readVisits() + 1;
+    fs.writeFileSync(visitsFile, JSON.stringify({ count: count }));
+    return count;
+}
+
+app.use(function(req, res, next) {
+    if (req.method === "GET" && (req.path === "/" || req.path === "/index.html" || req.path === "/app.html")) {
+        try { addVisit(); } catch (err) {}
+    }
+    next();
+});
+
+app.get("/mystats", function(req, res) {
+    if (req.query.key !== STATS_KEY) {
+        return res.status(404).send("Not found");
+    }
+    res.send("Visits: " + readVisits());
+});
 app.listen(PORT, function() {
     console.log("Server is running at http://localhost:" + PORT);
 });
