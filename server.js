@@ -175,7 +175,17 @@ app.post("/topic-quiz", async function(req, res) {
         }
 
         const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-        const prompt = `Create ${questionCount} original multiple-choice questions about "${topic}".
+        const prompt = `Create ${questionCount} original multiple-choice questions about this exact topic: "${topic}".
+Audience: ${gradeLevel}
+Difficulty: ${difficulty}
+Rules:
+- Stay on that topic only.
+- Use the student's wording. If they say "sig digs" or "significant digits", use "significant digits", not "significant figures".
+- Do not add extra topics. If they did not ask for unit conversions, do not include unit conversions.
+- Write original school practice questions.
+Return ONLY valid JSON. No markdown. No extra words.
+Format:
+[{"question":"Q","choices":["A","B","C","D"],"correctAnswer":"A"}]`;
 Audience: ${gradeLevel}
 Difficulty: ${difficulty}
 Write original school practice questions.
