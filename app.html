@@ -21,6 +21,8 @@
                 <button id="saveBtn" class="share-btn">Save set</button>
                 <button id="shareBtn" class="share-btn">Share set</button>
                 <button id="feedbackBtn" class="feedback-btn">Feedback</button>
+                                <span id="accountLabel" class="streak-badge">Not signed in</span>
+                <button id="accountBtn" class="feedback-btn">Account</button>
             </div>
         </div>
     </nav>
@@ -123,7 +125,20 @@
             </div>
         </div>
     </div>
-
+    <div id="accountModal" class="modal hidden">
+        <div class="modal-card">
+            <h2>Account</h2>
+            <input id="accountEmail" type="email" placeholder="Email">
+            <input id="accountPassword" type="password" placeholder="Password">
+            <p id="accountStatus"></p>
+            <div class="flash-actions">
+                <button id="registerBtn">Create free account</button>
+                <button id="loginBtn" class="secondary-btn">Log in</button>
+                <button id="logoutBtn" class="secondary-btn">Log out</button>
+                <button id="closeAccount" class="secondary-btn">Close</button>
+            </div>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
