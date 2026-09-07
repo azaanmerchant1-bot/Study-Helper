@@ -364,3 +364,7 @@ html { scroll-behavior: smooth; }
     font: inherit;
     margin: 8px 0;
 }
+.modal.open {
+    opacity: 1;
+    pointer-events: auto;
+}
