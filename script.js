@@ -68,8 +68,14 @@ renderSavedSets();
 updateLimitDisplay();
 updateStreakDisplay();
 refreshAccount();
-accountBtn.addEventListener("click", function() { accountModal.classList.remove("hidden"); });
-document.getElementById("closeAccount").addEventListener("click", function() { accountModal.classList.add("hidden"); });
+accountBtn.addEventListener("click", function() {
+    accountModal.classList.remove("hidden");
+    accountModal.classList.add("open");
+});
+document.getElementById("closeAccount").addEventListener("click", function() {
+    accountModal.classList.remove("open");
+    accountModal.classList.add("hidden");
+});
 document.getElementById("registerBtn").addEventListener("click", function() { sendAccount("/register"); });
 document.getElementById("loginBtn").addEventListener("click", function() { sendAccount("/login"); });
 document.getElementById("logoutBtn").addEventListener("click", async function() {
