@@ -14,18 +14,19 @@ const setNameInput = document.getElementById("setNameInput");
 const nameModalStatus = document.getElementById("nameModalStatus");
 const pdfBtn = document.getElementById("pdfBtn");
 const pdfInput = document.getElementById("pdfInput");
+const photoBtn = document.getElementById("photoBtn");
+const photoInput = document.getElementById("photoInput");
+const topicBtn = document.getElementById("topicBtn");
+const topicInput = document.getElementById("topicInput");
+const gradeLevel = document.getElementById("gradeLevel");
+const difficulty = document.getElementById("difficulty");
 const accountBtn = document.getElementById("accountBtn");
 const accountModal = document.getElementById("accountModal");
 const accountLabel = document.getElementById("accountLabel");
 const accountEmail = document.getElementById("accountEmail");
 const accountPassword = document.getElementById("accountPassword");
+const newPassword = document.getElementById("newPassword");
 const accountStatus = document.getElementById("accountStatus");
-const topicBtn = document.getElementById("topicBtn");
-const topicInput = document.getElementById("topicInput");
-const gradeLevel = document.getElementById("gradeLevel");
-const difficulty = document.getElementById("difficulty");
-const photoBtn = document.getElementById("photoBtn");
-const photoInput = document.getElementById("photoInput");
 const DAILY_LIMIT = 5;
 const USAGE_KEY = "studyai_usage_v2";
 
@@ -62,12 +63,6 @@ shareBtn.addEventListener("click", shareSet);
 saveBtn.addEventListener("click", function() { openNameModal("save"); });
 document.getElementById("cancelName").addEventListener("click", closeNameModal);
 document.getElementById("confirmName").addEventListener("click", confirmNameModal);
-loadSharedSet();
-restoreLastSet();
-renderSavedSets();
-updateLimitDisplay();
-updateStreakDisplay();
-refreshAccount();
 accountBtn.addEventListener("click", function() {
     accountModal.classList.remove("hidden");
     accountModal.classList.add("open");
@@ -78,10 +73,14 @@ document.getElementById("closeAccount").addEventListener("click", function() {
 });
 document.getElementById("registerBtn").addEventListener("click", function() { sendAccount("/register"); });
 document.getElementById("loginBtn").addEventListener("click", function() { sendAccount("/login"); });
-document.getElementById("logoutBtn").addEventListener("click", async function() {
-    await fetch("/logout", { method: "POST" });
-    refreshAccount();
-});
+document.getElementById("changePassBtn").addEventListener("click", changePassword);
+document.getElementById("logoutBtn").addEventListener("click", logoutAccount);
+loadSharedSet();
+restoreLastSet();
+renderSavedSets();
+updateLimitDisplay();
+updateStreakDisplay();
+refreshAccount();
 
 async function sendAccount(url) {
     accountStatus.textContent = "Please wait...";
@@ -93,10 +92,56 @@ async function sendAccount(url) {
         });
         const data = await response.json();
         accountStatus.textContent = data.error || ("Signed in as " + data.email);
-        refreshAccount();
+        await refreshAccount();
+        if (!data.error) {
+            const setsRes = await fetch("/my-sets");
+            const setsData = await setsRes.json();
+            localStorage.setItem("studyai_saved_sets", JSON.stringify(setsData.sets || []));
+            renderSavedSets();
+        }
     } catch (err) {
         accountStatus.textContent = "Could not reach the server.";
     }
+}
+
+async function changePassword() {
+    accountStatus.textContent = "Please wait...";
+    try {
+        const response = await fetch("/change-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                currentPassword: accountPassword.value,
+                newPassword: newPassword.value
+            })
+        });
+        const data = await response.json();
+        accountStatus.textContent = data.error || "Password changed.";
+        accountPassword.value = "";
+        newPassword.value = "";
+    } catch (err) {
+        accountStatus.textContent = "Could not change password.";
+    }
+}
+
+async function logoutAccount() {
+    try {
+        await fetch("/save-sets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sets: getSavedSets() })
+        });
+    } catch (err) {}
+    await fetch("/logout", { method: "POST" });
+    localStorage.removeItem("studyai_saved_sets");
+    localStorage.removeItem("studyai_last_set");
+    lastQuiz = [];
+    allCards = [];
+    notesInput.value = "";
+    output.innerHTML = "";
+    renderSavedSets();
+    refreshAccount();
+    accountStatus.textContent = "Logged out.";
 }
 
 async function refreshAccount() {
@@ -108,11 +153,11 @@ async function refreshAccount() {
         accountLabel.textContent = "Not signed in";
     }
 }
+
 function getTodayString() {
     const now = new Date();
     return now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
 }
-
 function getUsageData() {
     const today = getTodayString();
     const raw = localStorage.getItem(USAGE_KEY);
@@ -125,17 +170,12 @@ function getUsageData() {
         return { date: today, count: 0 };
     }
 }
-
-function getRemaining() {
-    return Math.max(0, DAILY_LIMIT - getUsageData().count);
-}
-
+function getRemaining() { return Math.max(0, DAILY_LIMIT - getUsageData().count); }
 function useOneGeneration() {
     const usage = getUsageData();
     usage.count += 1;
     localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
 }
-
 function updateLimitDisplay() {
     let badge = document.getElementById("limitBadge");
     if (!badge) {
@@ -146,7 +186,6 @@ function updateLimitDisplay() {
     }
     badge.textContent = getRemaining() + " free left today";
 }
-
 function updateStreak() {
     const today = getTodayString();
     const raw = localStorage.getItem("studyai_streak");
@@ -160,7 +199,6 @@ function updateStreak() {
     data.lastDate = today;
     localStorage.setItem("studyai_streak", JSON.stringify(data));
 }
-
 function updateStreakDisplay() {
     const today = getTodayString();
     const raw = localStorage.getItem("studyai_streak");
@@ -172,7 +210,6 @@ function updateStreakDisplay() {
     const displayCount = (data.lastDate === today || data.lastDate === yesterdayStr) ? data.count : 0;
     if (streakBadge) streakBadge.textContent = displayCount > 0 ? "Streak: " + displayCount + " day" : "Start your streak today";
 }
-
 function setMode(mode) {
     currentMode = mode;
     showingAllCards = false;
@@ -188,15 +225,9 @@ function setMode(mode) {
 }
 
 generateBtn.addEventListener("click", async function() {
-    if (getRemaining() <= 0) {
-        showError("You've used today's free generations. Come back tomorrow for 5 more.");
-        return;
-    }
+    if (getRemaining() <= 0) { showError("You've used today's free generations. Come back tomorrow for 5 more."); return; }
     const notesText = notesInput.value.trim();
-    if (!notesText) {
-        showError("Paste some notes first.");
-        return;
-    }
+    if (!notesText) { showError("Paste some notes first."); return; }
     generateBtn.disabled = true;
     setMode("quiz");
     output.innerHTML = "<p class='loading'>Generating your study set...</p>";
@@ -221,46 +252,10 @@ generateBtn.addEventListener("click", async function() {
     }
 });
 
-pdfBtn.addEventListener("click", async function() {
-    if (!pdfInput.files[0]) {
-        showError("Choose a PDF first.");
-        return;
-    }
-    if (getRemaining() <= 0) {
-        showError("You've used today's free generations. Come back tomorrow for 5 more.");
-        return;
-    }
-    const form = new FormData();
-    form.append("pdf", pdfInput.files[0]);
-    form.append("questionCount", questionCountInput.value);
-    pdfBtn.disabled = true;
-    setMode("quiz");
-    output.innerHTML = "<p class='loading'>Reading your PDF...</p>";
-    try {
-        const response = await fetch("/upload-pdf", { method: "POST", body: form });
-        const data = await response.json();
-        if (data.error) { showError(data.error); return; }
-        useOneGeneration();
-        updateLimitDisplay();
-        updateStreak();
-        updateStreakDisplay();
-        applySet(data.quiz || [], data.notes || "");
-    } catch (err) {
-        showError("Could not upload that PDF.");
-    } finally {
-        pdfBtn.disabled = false;
-    }
-});
 topicBtn.addEventListener("click", async function() {
-    if (getRemaining() <= 0) {
-        showError("You've used today's free generations. Come back tomorrow for 5 more.");
-        return;
-    }
+    if (getRemaining() <= 0) { showError("You've used today's free generations. Come back tomorrow for 5 more."); return; }
     const topic = topicInput.value.trim();
-    if (!topic) {
-        showError("Type a topic first.");
-        return;
-    }
+    if (!topic) { showError("Type a topic first."); return; }
     topicBtn.disabled = true;
     setMode("quiz");
     output.innerHTML = "<p class='loading'>Making your topic quiz...</p>";
@@ -288,15 +283,35 @@ topicBtn.addEventListener("click", async function() {
         topicBtn.disabled = false;
     }
 });
+
+pdfBtn.addEventListener("click", async function() {
+    if (!pdfInput.files[0]) { showError("Choose a PDF first."); return; }
+    if (getRemaining() <= 0) { showError("You've used today's free generations. Come back tomorrow for 5 more."); return; }
+    const form = new FormData();
+    form.append("pdf", pdfInput.files[0]);
+    form.append("questionCount", questionCountInput.value);
+    pdfBtn.disabled = true;
+    setMode("quiz");
+    output.innerHTML = "<p class='loading'>Reading your PDF...</p>";
+    try {
+        const response = await fetch("/upload-pdf", { method: "POST", body: form });
+        const data = await response.json();
+        if (data.error) { showError(data.error); return; }
+        useOneGeneration();
+        updateLimitDisplay();
+        updateStreak();
+        updateStreakDisplay();
+        applySet(data.quiz || [], data.notes || "");
+    } catch (err) {
+        showError("Could not upload that PDF.");
+    } finally {
+        pdfBtn.disabled = false;
+    }
+});
+
 photoBtn.addEventListener("click", async function() {
-    if (!photoInput.files[0]) {
-        showError("Choose a page photo first.");
-        return;
-    }
-    if (getRemaining() <= 0) {
-        showError("You've used today's free generations. Come back tomorrow for 5 more.");
-        return;
-    }
+    if (!photoInput.files[0]) { showError("Choose a page photo first."); return; }
+    if (getRemaining() <= 0) { showError("You've used today's free generations. Come back tomorrow for 5 more."); return; }
     const form = new FormData();
     form.append("photo", photoInput.files[0]);
     form.append("questionCount", questionCountInput.value);
@@ -318,6 +333,7 @@ photoBtn.addEventListener("click", async function() {
         photoBtn.disabled = false;
     }
 });
+
 function applySet(quiz, notesText) {
     lastQuiz = quiz;
     allCards = lastQuiz.map(function(q, i) { return { id: i, front: q.question, back: q.correctAnswer }; });
@@ -326,22 +342,17 @@ function applySet(quiz, notesText) {
     localStorage.setItem("studyai_last_set", JSON.stringify({ quiz: lastQuiz, notes: notesInput.value }));
     displayQuiz(lastQuiz);
 }
-
 function resetFlashProgress() {
     queue = allCards.slice();
     knownCards = [];
     learningCards = [];
 }
-
 function showError(message) {
     setMode("quiz");
     output.innerHTML = "<div class='empty-state'><p>" + message + "</p><button id='retryBtn'>Try Again</button></div>";
     document.getElementById("retryBtn").addEventListener("click", function() {
-        if (topicInput.value.trim()) {
-            topicBtn.click();
-        } else {
-            generateBtn.click();
-        }
+        if (topicInput.value.trim()) topicBtn.click();
+        else generateBtn.click();
     });
 }
 function displayQuiz(quiz) {
@@ -375,11 +386,6 @@ function displayQuiz(quiz) {
         output.appendChild(card);
     });
 }
-
-function smarterFallback(chosen, correctAnswer) {
-    return "Why it's correct:\n- \"" + correctAnswer + "\" matches this question.\n\nWhy your answer doesn't fit:\n- \"" + chosen + "\" is not the answer this question is asking for.\n\nHow to remember it:\n- Say the question out loud, then repeat the correct answer in your own words.";
-}
-
 function addExplainButton(card, question, chosen, correctAnswer) {
     const explainBtn = document.createElement("button");
     explainBtn.className = "explain-btn";
@@ -387,17 +393,12 @@ function addExplainButton(card, question, chosen, correctAnswer) {
     explainBtn.addEventListener("click", async function() {
         explainBtn.textContent = "Explaining...";
         explainBtn.disabled = true;
-        let text = smarterFallback(chosen, correctAnswer);
+        let text = "Why it's correct:\n- \"" + correctAnswer + "\" matches this question.\n\nWhy your answer doesn't fit:\n- \"" + chosen + "\" is not the answer this question is asking for.";
         try {
             const response = await fetch("/explain", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    question: question,
-                    chosen: chosen,
-                    correctAnswer: correctAnswer,
-                    notes: notesInput.value
-                })
+                body: JSON.stringify({ question: question, chosen: chosen, correctAnswer: correctAnswer, notes: notesInput.value })
             });
             const data = await response.json();
             if (data.explanation) text = data.explanation;
@@ -409,15 +410,11 @@ function addExplainButton(card, question, chosen, correctAnswer) {
     });
     card.appendChild(explainBtn);
 }
-
 function addFlagButton(card, question) {
     const flagBtn = document.createElement("button");
     flagBtn.className = "flag-btn";
     flagBtn.textContent = "This question is off";
     flagBtn.addEventListener("click", function() {
-        const flags = JSON.parse(localStorage.getItem("studyai_flags") || "[]");
-        flags.push({ question: question, time: new Date().toISOString() });
-        localStorage.setItem("studyai_flags", JSON.stringify(flags));
         fetch("/feedback", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -428,7 +425,6 @@ function addFlagButton(card, question) {
     });
     card.appendChild(flagBtn);
 }
-
 function showQuizResults(quiz) {
     const correctCount = quizAnswers.filter(function(a) { return a.isCorrect; }).length;
     const percent = quiz.length ? Math.round((correctCount / quiz.length) * 100) : 0;
@@ -446,6 +442,25 @@ function showQuizResults(quiz) {
     box.appendChild(jump);
     output.prepend(box);
 }
+function renderFlashcards() {
+    if (!allCards.length) {
+        flashcardsBox.innerHTML = "<div class='empty-state'>Generate a study set first.</div>";
+        return;
+    }
+    if (showingAllCards) return renderAllCards();
+    const knownPercent = allCards.length ? Math.round((knownCards.length / allCards.length) * 100) : 0;
+    if (!queue.length) {
+        if (learningCards.length) {
+            queue = learningCards.slice();
+            learningCards = [];
+            flashcardsBox.innerHTML = "<div class='empty-state'><p>You knew " + knownCards.length + " of " + allCards.length + " (" + knownPercent + "%).</p><div class='flash-actions'><button id='startReview'>Review those cards</button><button id='seeAllBtn'>See all cards</button></div></div>";
+            document.getElementById("startReview").addEventListener("click", renderFlashcards);
+            document.getElementById("seeAllBtn").addEventListener("click", function() { showingAllCards = true; renderAllCards(); });
+            return;
+        }
+        flashcardsBox.innerHTML = "<div class='empty-state'><p>Finished. You knew " + knownCards.length + " of " + allCards.length + " (" + knownPercent + "%).</p><div class='flash-actions'><button id='restartCards'>Study again</button## `script.js` Part 2 — paste this under Part 1
+
+```javascript
 function renderFlashcards() {
     if (!allCards.length) {
         flashcardsBox.innerHTML = "<div class='empty-state'>Generate a study set first.</div>";
@@ -609,18 +624,14 @@ function openNameModal(mode, id) {
         if (set) setNameInput.value = set.name;
     }
     nameModal.classList.remove("hidden");
-    requestAnimationFrame(function() {
-        nameModal.classList.add("open");
-    });
+    nameModal.classList.add("open");
     setNameInput.focus();
 }
 
 function closeNameModal() {
     nameModal.classList.remove("open");
-    setTimeout(function() {
-        nameModal.classList.add("hidden");
-        renameId = null;
-    }, 200);
+    nameModal.classList.add("hidden");
+    renameId = null;
 }
 
 function confirmNameModal() {
@@ -644,6 +655,11 @@ function confirmNameModal() {
     }
     localStorage.setItem("studyai_saved_sets", JSON.stringify(sets));
     renderSavedSets();
+    fetch("/save-sets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sets: sets })
+    }).catch(function() {});
     closeNameModal();
 }
 
@@ -671,8 +687,14 @@ function renderSavedSets() {
     });
     savedList.querySelectorAll("[data-delete]").forEach(function(btn) {
         btn.addEventListener("click", function() {
-            localStorage.setItem("studyai_saved_sets", JSON.stringify(getSavedSets().filter(function(s) { return s.id !== Number(btn.getAttribute("data-delete")); })));
+            const sets = getSavedSets().filter(function(s) { return s.id !== Number(btn.getAttribute("data-delete")); });
+            localStorage.setItem("studyai_saved_sets", JSON.stringify(sets));
             renderSavedSets();
+            fetch("/save-sets", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sets: sets })
+            }).catch(function() {});
         });
     });
 }
@@ -726,8 +748,12 @@ const submitFeedback = document.getElementById("submitFeedback");
 const feedbackText = document.getElementById("feedbackText");
 const feedbackStatus = document.getElementById("feedbackStatus");
 
-feedbackBtn.addEventListener("click", function() { feedbackModal.classList.remove("hidden"); });
+feedbackBtn.addEventListener("click", function() {
+    feedbackModal.classList.remove("hidden");
+    feedbackModal.classList.add("open");
+});
 closeFeedback.addEventListener("click", function() {
+    feedbackModal.classList.remove("open");
     feedbackModal.classList.add("hidden");
     feedbackText.value = "";
     feedbackStatus.textContent = "";
@@ -745,7 +771,7 @@ submitFeedback.addEventListener("click", async function() {
         const data = await response.json();
         feedbackStatus.textContent = data.success ? "Thanks! Feedback sent." : (data.error || "Something went wrong.");
     } catch (err) {
-        feedbackStatus.textContent = "Saved on this computer. Server not reached.";
+        feedbackStatus.textContent = "Could not reach the server.";
     } finally {
         submitFeedback.disabled = false;
     }
