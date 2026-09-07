@@ -15,13 +15,13 @@
             <a class="nav-logo" href="index.html"><span class="nav-mark">S</span> StudyAI</a>
             <div class="nav-links">
                 <span id="streakBadge" class="streak-badge">Start your streak today</span>
+                <span id="accountLabel" class="streak-badge">Not signed in</span>
                 <button class="nav-chip active" data-mode="quiz">Quiz</button>
                 <button class="nav-chip" data-mode="flashcards">Flashcards</button>
                 <button class="nav-chip" data-mode="games">Match</button>
                 <button id="saveBtn" class="share-btn">Save set</button>
                 <button id="shareBtn" class="share-btn">Share set</button>
                 <button id="feedbackBtn" class="feedback-btn">Feedback</button>
-                                <span id="accountLabel" class="streak-badge">Not signed in</span>
                 <button id="accountBtn" class="feedback-btn">Account</button>
             </div>
         </div>
@@ -42,20 +42,19 @@
                 </div>
                 <button id="generateBtn">Generate Study Set</button>
             </div>
-
             <label class="field-label" for="topicInput">Or make a topic quiz</label>
             <input id="topicInput" type="text" placeholder="Topic, example: photosynthesis">
             <div class="controls">
                 <div class="control-group">
                     <label for="gradeLevel">Grade</label>
                     <select id="gradeLevel">
-                        <option value="Grade 6">Grade 6</option>
-                        <option value="Grade 7">Grade 7</option>
-                        <option value="Grade 8">Grade 8</option>
-                        <option value="Grade 9">Grade 9</option>
-                        <option value="Grade 10" selected>Grade 10</option>
-                        <option value="Grade 11">Grade 11</option>
-                        <option value="Grade 12">Grade 12</option>
+                        <option>Grade 6</option>
+                        <option>Grade 7</option>
+                        <option>Grade 8</option>
+                        <option>Grade 9</option>
+                        <option selected>Grade 10</option>
+                        <option>Grade 11</option>
+                        <option>Grade 12</option>
                     </select>
                 </div>
                 <div class="control-group">
@@ -68,7 +67,6 @@
                 </div>
                 <button id="topicBtn" class="secondary-btn" type="button">Make topic quiz</button>
             </div>
-
             <div class="controls">
                 <input id="pdfInput" type="file" accept="application/pdf">
                 <button id="pdfBtn" class="secondary-btn" type="button">Upload PDF</button>
@@ -125,20 +123,24 @@
             </div>
         </div>
     </div>
+
     <div id="accountModal" class="modal hidden">
         <div class="modal-card">
             <h2>Account</h2>
             <input id="accountEmail" type="email" placeholder="Email">
-            <input id="accountPassword" type="password" placeholder="Password">
+            <input id="accountPassword" type="password" placeholder="Current password">
+            <input id="newPassword" type="password" placeholder="New password">
             <p id="accountStatus"></p>
             <div class="flash-actions">
                 <button id="registerBtn">Create free account</button>
                 <button id="loginBtn" class="secondary-btn">Log in</button>
+                <button id="changePassBtn" class="secondary-btn">Change password</button>
                 <button id="logoutBtn" class="secondary-btn">Log out</button>
                 <button id="closeAccount" class="secondary-btn">Close</button>
             </div>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
