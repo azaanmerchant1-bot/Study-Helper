@@ -14,6 +14,12 @@ const setNameInput = document.getElementById("setNameInput");
 const nameModalStatus = document.getElementById("nameModalStatus");
 const pdfBtn = document.getElementById("pdfBtn");
 const pdfInput = document.getElementById("pdfInput");
+const accountBtn = document.getElementById("accountBtn");
+const accountModal = document.getElementById("accountModal");
+const accountLabel = document.getElementById("accountLabel");
+const accountEmail = document.getElementById("accountEmail");
+const accountPassword = document.getElementById("accountPassword");
+const accountStatus = document.getElementById("accountStatus");
 const topicBtn = document.getElementById("topicBtn");
 const topicInput = document.getElementById("topicInput");
 const gradeLevel = document.getElementById("gradeLevel");
@@ -61,7 +67,41 @@ restoreLastSet();
 renderSavedSets();
 updateLimitDisplay();
 updateStreakDisplay();
+refreshAccount();
+accountBtn.addEventListener("click", function() { accountModal.classList.remove("hidden"); });
+document.getElementById("closeAccount").addEventListener("click", function() { accountModal.classList.add("hidden"); });
+document.getElementById("registerBtn").addEventListener("click", function() { sendAccount("/register"); });
+document.getElementById("loginBtn").addEventListener("click", function() { sendAccount("/login"); });
+document.getElementById("logoutBtn").addEventListener("click", async function() {
+    await fetch("/logout", { method: "POST" });
+    refreshAccount();
+});
 
+async function sendAccount(url) {
+    accountStatus.textContent = "Please wait...";
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: accountEmail.value, password: accountPassword.value })
+        });
+        const data = await response.json();
+        accountStatus.textContent = data.error || ("Signed in as " + data.email);
+        refreshAccount();
+    } catch (err) {
+        accountStatus.textContent = "Could not reach the server.";
+    }
+}
+
+async function refreshAccount() {
+    try {
+        const response = await fetch("/me");
+        const data = await response.json();
+        accountLabel.textContent = data.email ? data.email : "Not signed in";
+    } catch (err) {
+        accountLabel.textContent = "Not signed in";
+    }
+}
 function getTodayString() {
     const now = new Date();
     return now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
