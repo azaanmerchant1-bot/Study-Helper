@@ -75,6 +75,7 @@ document.getElementById("registerBtn").addEventListener("click", function() { se
 document.getElementById("loginBtn").addEventListener("click", function() { sendAccount("/login"); });
 document.getElementById("changePassBtn").addEventListener("click", changePassword);
 document.getElementById("logoutBtn").addEventListener("click", logoutAccount);
+
 loadSharedSet();
 restoreLastSet();
 renderSavedSets();
@@ -121,13 +122,11 @@ async function changePassword() {
             })
         });
         const data = await response.json();
-        if (data.error) {
-            accountStatus.textContent = data.error;
-            return;
+        accountStatus.textContent = data.error || "Password changed. Use the new one next time.";
+        if (!data.error) {
+            accountPassword.value = "";
+            newPassword.value = "";
         }
-        accountStatus.textContent = "Password changed. Use the new one next time.";
-        accountPassword.value = "";
-        newPassword.value = "";
     } catch (err) {
         accountStatus.textContent = "Could not change password.";
     }
@@ -159,76 +158,14 @@ async function refreshAccount() {
         const data = await response.json();
         if (data.email) {
             accountLabel.textContent = data.email;
-            accountBtn.textContent = "Account";
             accountBtn.classList.add("signed-in");
         } else {
             accountLabel.textContent = "Not signed in";
-            accountBtn.textContent = "Account";
             accountBtn.classList.remove("signed-in");
         }
     } catch (err) {
         accountLabel.textContent = "Not signed in";
         accountBtn.classList.remove("signed-in");
-    }
-}
-        if (!data.error) {
-            const setsRes = await fetch("/my-sets");
-            const setsData = await setsRes.json();
-            localStorage.setItem("studyai_saved_sets", JSON.stringify(setsData.sets || []));
-            renderSavedSets();
-        }
-    } catch (err) {
-        accountStatus.textContent = "Could not reach the server.";
-    }
-}
-
-async function changePassword() {
-    accountStatus.textContent = "Please wait...";
-    try {
-        const response = await fetch("/change-password", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                currentPassword: accountPassword.value,
-                newPassword: newPassword.value
-            })
-        });
-        const data = await response.json();
-        accountStatus.textContent = data.error || "Password changed.";
-        accountPassword.value = "";
-        newPassword.value = "";
-    } catch (err) {
-        accountStatus.textContent = "Could not change password.";
-    }
-}
-
-async function logoutAccount() {
-    try {
-        await fetch("/save-sets", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sets: getSavedSets() })
-        });
-    } catch (err) {}
-    await fetch("/logout", { method: "POST" });
-    localStorage.removeItem("studyai_saved_sets");
-    localStorage.removeItem("studyai_last_set");
-    lastQuiz = [];
-    allCards = [];
-    notesInput.value = "";
-    output.innerHTML = "";
-    renderSavedSets();
-    refreshAccount();
-    accountStatus.textContent = "Logged out.";
-}
-
-async function refreshAccount() {
-    try {
-        const response = await fetch("/me");
-        const data = await response.json();
-        accountLabel.textContent = data.email ? data.email : "Not signed in";
-    } catch (err) {
-        accountLabel.textContent = "Not signed in";
     }
 }
 
@@ -256,13 +193,13 @@ function useOneGeneration() {
 }
 function updateLimitDisplay() {
     let badge = document.getElementById("limitBadge");
-    if (!badge) {
+    if (!badge && generateBtn) {
         badge = document.createElement("span");
         badge.id = "limitBadge";
         badge.className = "limit-badge";
         generateBtn.insertAdjacentElement("afterend", badge);
     }
-    badge.textContent = getRemaining() + " free left today";
+    if (badge) badge.textContent = getRemaining() + " free left today";
 }
 function updateStreak() {
     const today = getTodayString();
@@ -413,7 +350,7 @@ photoBtn.addEventListener("click", async function() {
 });
 
 function applySet(quiz, notesText) {
-    lastQuiz = quiz;
+    lastQuiz = quiz || [];
     allCards = lastQuiz.map(function(q, i) { return { id: i, front: q.question, back: q.correctAnswer }; });
     if (notesText) notesInput.value = notesText;
     resetFlashProgress();
@@ -429,7 +366,7 @@ function showError(message) {
     setMode("quiz");
     output.innerHTML = "<div class='empty-state'><p>" + message + "</p><button id='retryBtn'>Try Again</button></div>";
     document.getElementById("retryBtn").addEventListener("click", function() {
-        if (topicInput.value.trim()) topicBtn.click();
+        if (topicInput && topicInput.value.trim()) topicBtn.click();
         else generateBtn.click();
     });
 }
@@ -471,7 +408,7 @@ function addExplainButton(card, question, chosen, correctAnswer) {
     explainBtn.addEventListener("click", async function() {
         explainBtn.textContent = "Explaining...";
         explainBtn.disabled = true;
-        let text = "Why it's correct:\n- \"" + correctAnswer + "\" matches this question.\n\nWhy your answer doesn't fit:\n- \"" + chosen + "\" is not the answer this question is asking for.";
+        let text = "Why it's correct:\n- \"" + correctAnswer + "\" matches this question.";
         try {
             const response = await fetch("/explain", {
                 method: "POST",
@@ -520,25 +457,6 @@ function showQuizResults(quiz) {
     box.appendChild(jump);
     output.prepend(box);
 }
-function renderFlashcards() {
-    if (!allCards.length) {
-        flashcardsBox.innerHTML = "<div class='empty-state'>Generate a study set first.</div>";
-        return;
-    }
-    if (showingAllCards) return renderAllCards();
-    const knownPercent = allCards.length ? Math.round((knownCards.length / allCards.length) * 100) : 0;
-    if (!queue.length) {
-        if (learningCards.length) {
-            queue = learningCards.slice();
-            learningCards = [];
-            flashcardsBox.innerHTML = "<div class='empty-state'><p>You knew " + knownCards.length + " of " + allCards.length + " (" + knownPercent + "%).</p><div class='flash-actions'><button id='startReview'>Review those cards</button><button id='seeAllBtn'>See all cards</button></div></div>";
-            document.getElementById("startReview").addEventListener("click", renderFlashcards);
-            document.getElementById("seeAllBtn").addEventListener("click", function() { showingAllCards = true; renderAllCards(); });
-            return;
-        }
-        flashcardsBox.innerHTML = "<div class='empty-state'><p>Finished. You knew " + knownCards.length + " of " + allCards.length + " (" + knownPercent + "%).</p><div class='flash-actions'><button id='restartCards'>Study again</button## `script.js` Part 2 — paste this under Part 1
-
-```javascript
 function renderFlashcards() {
     if (!allCards.length) {
         flashcardsBox.innerHTML = "<div class='empty-state'>Generate a study set first.</div>";
