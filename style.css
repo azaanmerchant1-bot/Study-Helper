@@ -368,3 +368,26 @@ html { scroll-behavior: smooth; }
     opacity: 1;
     pointer-events: auto;
 }
+#accountBtn {
+    background: linear-gradient(135deg, #7b6cff, #22c3a6);
+    color: white !important;
+    padding: 10px 16px;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(123, 108, 255, 0.25);
+}
+
+#accountBtn.signed-in {
+    background: #22c3a6;
+    color: #062018 !important;
+}
+
+#accountEmail, #accountPassword, #newPassword {
+    width: 100%;
+    background: #0d1326;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 12px;
+    padding: 12px;
+    font: inherit;
+    margin: 8px 0;
+}
