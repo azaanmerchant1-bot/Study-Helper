@@ -88,11 +88,89 @@ async function sendAccount(url) {
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: accountEmail.value, password: accountPassword.value })
+            body: JSON.stringify({
+                email: accountEmail.value.trim(),
+                password: accountPassword.value
+            })
         });
         const data = await response.json();
-        accountStatus.textContent = data.error || ("Signed in as " + data.email);
+        if (data.error) {
+            accountStatus.textContent = data.error;
+            return;
+        }
+        accountStatus.textContent = "Signed in as " + data.email;
         await refreshAccount();
+        const setsRes = await fetch("/my-sets");
+        const setsData = await setsRes.json();
+        localStorage.setItem("studyai_saved_sets", JSON.stringify(setsData.sets || []));
+        renderSavedSets();
+    } catch (err) {
+        accountStatus.textContent = "Could not reach the server.";
+    }
+}
+
+async function changePassword() {
+    accountStatus.textContent = "Please wait...";
+    try {
+        const response = await fetch("/change-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                currentPassword: accountPassword.value,
+                newPassword: newPassword.value
+            })
+        });
+        const data = await response.json();
+        if (data.error) {
+            accountStatus.textContent = data.error;
+            return;
+        }
+        accountStatus.textContent = "Password changed. Use the new one next time.";
+        accountPassword.value = "";
+        newPassword.value = "";
+    } catch (err) {
+        accountStatus.textContent = "Could not change password.";
+    }
+}
+
+async function logoutAccount() {
+    try {
+        await fetch("/save-sets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sets: getSavedSets() })
+        });
+    } catch (err) {}
+    await fetch("/logout", { method: "POST" });
+    localStorage.removeItem("studyai_saved_sets");
+    localStorage.removeItem("studyai_last_set");
+    lastQuiz = [];
+    allCards = [];
+    notesInput.value = "";
+    output.innerHTML = "";
+    renderSavedSets();
+    refreshAccount();
+    accountStatus.textContent = "Logged out.";
+}
+
+async function refreshAccount() {
+    try {
+        const response = await fetch("/me");
+        const data = await response.json();
+        if (data.email) {
+            accountLabel.textContent = data.email;
+            accountBtn.textContent = "Account";
+            accountBtn.classList.add("signed-in");
+        } else {
+            accountLabel.textContent = "Not signed in";
+            accountBtn.textContent = "Account";
+            accountBtn.classList.remove("signed-in");
+        }
+    } catch (err) {
+        accountLabel.textContent = "Not signed in";
+        accountBtn.classList.remove("signed-in");
+    }
+}
         if (!data.error) {
             const setsRes = await fetch("/my-sets");
             const setsData = await setsRes.json();
