@@ -7,6 +7,7 @@ const path = require("path");
 const multer = require("multer");
 const pdfParse = require("pdf-parse");
 const bcrypt = require("bcryptjs");
+const JSZip = require("jszip");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,38 +35,23 @@ app.get("/", function(req, res) {
 });
 
 function readUsers() {
-    try {
-        return JSON.parse(fs.readFileSync(usersFile, "utf8"));
-    } catch (err) {
-        return [];
-    }
+    try { return JSON.parse(fs.readFileSync(usersFile, "utf8")); } catch (err) { return []; }
 }
-
 function writeUsers(users) {
     fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
 }
-
 function currentEmail(req) {
-    const raw = (req.headers.cookie || "").split(";").map(function(part) {
-        return part.trim();
-    }).find(function(part) {
+    const raw = (req.headers.cookie || "").split(";").map(function(part) { return part.trim(); }).find(function(part) {
         return part.indexOf("studyai_email=") === 0;
     });
     return raw ? decodeURIComponent(raw.split("=")[1]) : "";
 }
-
 function setLoginCookie(res, email) {
     res.setHeader("Set-Cookie", "studyai_email=" + encodeURIComponent(email) + "; Path=/; SameSite=Lax; Max-Age=2592000");
 }
-
 function readVisits() {
-    try {
-        return JSON.parse(fs.readFileSync(visitsFile, "utf8")).count || 0;
-    } catch (err) {
-        return 0;
-    }
+    try { return JSON.parse(fs.readFileSync(visitsFile, "utf8")).count || 0; } catch (err) { return 0; }
 }
-
 function addVisit() {
     const count = readVisits() + 1;
     fs.writeFileSync(visitsFile, JSON.stringify({ count: count }));
@@ -88,12 +74,7 @@ app.post("/register", async function(req, res) {
         if (users.some(function(user) { return user.email === email; })) {
             return res.status(400).json({ error: "That email is already used. Click Log in." });
         }
-        users.push({
-            email: email,
-            password: await bcrypt.hash(password, 10),
-            plan: "free",
-            savedSets: []
-        });
+        users.push({ email: email, password: await bcrypt.hash(password, 10), plan: "free", savedSets: [] });
         writeUsers(users);
         setLoginCookie(res, email);
         res.json({ success: true, email: email, plan: "free" });
@@ -160,17 +141,13 @@ app.post("/save-sets", function(req, res) {
 });
 
 app.get("/mystats", function(req, res) {
-    if (req.query.key !== STATS_KEY) {
-        return res.status(404).send("Not found");
-    }
+    if (req.query.key !== STATS_KEY) return res.status(404).send("Not found");
     res.send("Visits: " + readVisits());
 });
 
 app.post("/feedback", function(req, res) {
     const message = req.body.message;
-    if (!message || !message.trim()) {
-        return res.status(400).json({ error: "Feedback can't be empty." });
-    }
+    if (!message || !message.trim()) return res.status(400).json({ error: "Feedback can't be empty." });
     const entry = "[" + new Date().toISOString() + "] " + message.trim() + "\n---\n";
     fs.appendFile("feedback.txt", entry, function(err) {
         if (err) return res.status(500).json({ error: "Could not save feedback." });
@@ -208,27 +185,15 @@ app.post("/upload-photo", upload.single("photo"), async function(req, res) {
         const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
         const questionCount = parseInt(req.body.questionCount) || 5;
         const result = await model.generateContent([
-            {
-                text: `Read the textbook page in this photo.
-First write short study notes from the page.
-Then create ${questionCount} multiple-choice questions from those notes.
-Return ONLY valid JSON in this exact format:
-{"notes":"short notes here","quiz":[{"question":"question text","choices":["A","B","C","D"],"correctAnswer":"A"}]}`
-            },
-            {
-                inlineData: {
-                    mimeType: req.file.mimetype || "image/jpeg",
-                    data: req.file.buffer.toString("base64")
-                }
-            }
+            { text: "Read this textbook page. Return ONLY JSON: {\"notes\":\"short notes\",\"quiz\":[{\"question\":\"q\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"correctAnswer\":\"A\"}]}. Make " + questionCount + " questions." },
+            { inlineData: { mimeType: req.file.mimetype || "image/jpeg", data: req.file.buffer.toString("base64") } }
         ]);
         const cleaned = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
         const parsed = JSON.parse(cleaned);
         const quiz = (parsed.quiz || []).map(function(question) {
-            const shuffledChoices = (question.choices || []).slice().sort(function() { return Math.random() - 0.5; });
             return {
                 question: question.question,
-                choices: shuffledChoices,
+                choices: (question.choices || []).slice().sort(function() { return Math.random() - 0.5; }),
                 correctAnswer: question.correctAnswer
             };
         });
@@ -239,27 +204,65 @@ Return ONLY valid JSON in this exact format:
     }
 });
 
+app.post("/pptx-link", async function(req, res) {
+    try {
+        let link = (req.body.link || "").trim();
+        const questionCount = parseInt(req.body.questionCount) || 5;
+        if (!link) return res.status(400).json({ error: "Paste a PowerPoint link first." });
+
+        if (link.indexOf("docs.google.com/presentation") !== -1) {
+            const match = link.match(/\/presentation\/d\/([a-zA-Z0-9-_]+)/);
+            if (!match) return res.status(400).json({ error: "That slides link looks wrong." });
+            link = "https://docs.google.com/presentation/d/" + match[1] + "/export?format=txt";
+        } else if (link.indexOf("?") === -1) {
+            link += "?download=1";
+        } else if (link.indexOf("download=1") === -1) {
+            link += "&download=1";
+        }
+
+        const fileRes = await fetch(link, { redirect: "follow" });
+        if (!fileRes.ok) {
+            return res.status(400).json({ error: "Could not open that link. Set sharing to Anyone with the link can view." });
+        }
+        const contentType = fileRes.headers.get("content-type") || "";
+        const buffer = Buffer.from(await fileRes.arrayBuffer());
+        let notes = "";
+
+        if (contentType.indexOf("text/plain") !== -1) {
+            notes = buffer.toString("utf8");
+        } else if (buffer[0] === 0x50 && buffer[1] === 0x4b) {
+            const zip = await JSZip.loadAsync(buffer);
+            const names = Object.keys(zip.files).filter(function(name) {
+                return /ppt\/slides\/slide\d+\.xml$/.test(name);
+            });
+            for (let i = 0; i < names.length; i++) {
+                const xml = await zip.files[names[i]].async("string");
+                const bits = xml.match(/<a:t[^>]*>[^<]*<\/a:t>/g) || [];
+                notes += bits.map(function(bit) { return bit.replace(/<[^>]+>/g, ""); }).join(" ") + "\n";
+            }
+        } else {
+            return res.status(400).json({ error: "That link needs a Microsoft login. Share it as Anyone with the link, and turn off Block download." });
+        }
+
+        notes = notes.replace(/\s+/g, " ").trim().slice(0, 12000);
+        if (notes.length < 40) return res.status(400).json({ error: "The link opened, but there was not enough slide text." });
+        const quiz = await makeQuiz(notes, questionCount);
+        res.json({ notes: notes.slice(0, 3000), quiz: quiz });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Could not make a quiz from that link." });
+    }
+});
+
 app.post("/explain", async function(req, res) {
     try {
         const question = req.body.question || "";
         const chosen = req.body.chosen || "";
         const correctAnswer = req.body.correctAnswer || "";
         const notes = (req.body.notes || "").slice(0, 4000);
-        if (!question || !chosen || !correctAnswer) {
-            return res.status(400).json({ error: "Missing question info." });
-        }
+        if (!question || !chosen || !correctAnswer) return res.status(400).json({ error: "Missing question info." });
         const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-        const prompt = `You are a tutor.
-Question: ${question}
-Student chose: ${chosen}
-Correct answer: ${correctAnswer}
-Notes: ${notes || "No notes given."}
-
-Write:
-Why it's correct:
-Why your answer doesn't fit:
-How to remember it:`;
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent("You are a tutor.\nQuestion: " + question + "\nStudent chose: " + chosen + "\nCorrect answer: " + correctAnswer + "\nNotes: " + (notes || "No notes given.") + "\n\nWrite:\nWhy it's correct:\nWhy your answer doesn't fit:\nHow to remember it:");
         res.json({ explanation: result.response.text().trim() });
     } catch (error) {
         res.status(500).json({ error: "Could not get an explanation right now." });
@@ -273,35 +276,21 @@ app.post("/topic-quiz", async function(req, res) {
         const difficulty = req.body.difficulty || "medium";
         const questionCount = parseInt(req.body.questionCount) || 5;
         if (!topic) return res.status(400).json({ error: "Type a topic first." });
-
         const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-        const prompt = `Create ${questionCount} original multiple-choice questions about this exact topic: "${topic}".
-Audience: ${gradeLevel}
-Difficulty: ${difficulty}
-Rules:
-- Stay on that topic only.
-- Use the student's wording. If they say "sig digs" or "significant digits", use "significant digits", not "significant figures".
-- Do not add extra topics unless they asked for them.
-- Write original school practice questions.
-Return ONLY valid JSON. No markdown. No extra words.
-Format:
-[{"question":"Q","choices":["A","B","C","D"],"correctAnswer":"A"}]`;
-
+        const prompt = "Create " + questionCount + " original multiple-choice questions about this exact topic: \"" + topic + "\".\nAudience: " + gradeLevel + "\nDifficulty: " + difficulty + "\nStay on that topic. Use the student's wording.\nReturn ONLY valid JSON:\n[{\"question\":\"Q\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"correctAnswer\":\"A\"}]";
         const result = await model.generateContent(prompt);
         let text = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
         const start = text.indexOf("[");
         const end = text.lastIndexOf("]");
         if (start !== -1 && end !== -1) text = text.slice(start, end + 1);
-        const quizData = JSON.parse(text);
-        const quiz = quizData.map(function(question) {
-            const choices = (question.choices || []).slice().sort(function() { return Math.random() - 0.5; });
+        const quiz = JSON.parse(text).map(function(question) {
             return {
                 question: question.question,
-                choices: choices,
+                choices: (question.choices || []).slice().sort(function() { return Math.random() - 0.5; }),
                 correctAnswer: question.correctAnswer
             };
         });
-        if (!quiz.length) return res.status(500).json({ error: "Could not make that topic quiz. Try a simpler topic." });
+        if (!quiz.length) return res.status(500).json({ error: "Could not make that topic quiz." });
         res.json({ quiz: quiz, notes: topic + " · " + gradeLevel + " · " + difficulty });
     } catch (error) {
         console.error(error);
@@ -311,24 +300,16 @@ Format:
 
 async function makeQuiz(notes, questionCount) {
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-    const prompt = `Based on these notes, create exactly ${questionCount} multiple-choice quiz questions.
-Return ONLY valid JSON, no other text, in this exact format:
-[
-  {
-    "question": "question text here",
-    "choices": ["choice A", "choice B", "choice C", "choice D"],
-    "correctAnswer": "choice A"
-  }
-]
-Notes: ${notes}`;
+    const prompt = "Based on these notes, create exactly " + questionCount + " multiple-choice quiz questions. Return ONLY valid JSON: [{\"question\":\"q\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"correctAnswer\":\"A\"}]\nNotes: " + notes;
     const result = await model.generateContent(prompt);
     const cleanedText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
-    const quizData = JSON.parse(cleanedText);
+    const start = cleanedText.indexOf("[");
+    const end = cleanedText.lastIndexOf("]");
+    const quizData = JSON.parse(start !== -1 ? cleanedText.slice(start, end + 1) : cleanedText);
     return quizData.map(function(question) {
-        const shuffledChoices = question.choices.slice().sort(function() { return Math.random() - 0.5; });
         return {
             question: question.question,
-            choices: shuffledChoices,
+            choices: question.choices.slice().sort(function() { return Math.random() - 0.5; }),
             correctAnswer: question.correctAnswer
         };
     });
