@@ -258,13 +258,10 @@ topicBtn.addEventListener("click", async function() {
 });
 
 pdfBtn.addEventListener("click", async function() {
-pdfBtn.addEventListener("click", async function() {
     if (!pdfInput.files.length) { showError("Choose one or more PDFs first."); return; }
     if (getRemaining() <= 0) { showError("You've used today's free generations. Come back tomorrow for 5 more."); return; }
     const form = new FormData();
-    for (let i = 0; i < pdfInput.files.length; i++) {
-        form.append("pdf", pdfInput.files[i]);
-    }
+    for (let i = 0; i < pdfInput.files.length; i++) form.append("pdf", pdfInput.files[i]);
     form.append("questionCount", questionCountInput.value);
     pdfBtn.disabled = true;
     setMode("quiz");
@@ -276,22 +273,6 @@ pdfBtn.addEventListener("click", async function() {
         useOneGeneration(); updateLimitDisplay(); updateStreak(); updateStreakDisplay();
         applySet(data.quiz || [], data.notes || "");
     } catch (err) { showError("Could not upload those PDFs."); }
-    finally { pdfBtn.disabled = false; }
-});
-    if (getRemaining() <= 0) { showError("You've used today's free generations. Come back tomorrow for 5 more."); return; }
-    const form = new FormData();
-    form.append("pdf", pdfInput.files[0]);
-    form.append("questionCount", questionCountInput.value);
-    pdfBtn.disabled = true;
-    setMode("quiz");
-    output.innerHTML = "<p class='loading'>Reading your PDF...</p>";
-    try {
-        const response = await fetch("/upload-pdf", { method: "POST", body: form });
-        const data = await response.json();
-        if (data.error) { showError(data.error); return; }
-        useOneGeneration(); updateLimitDisplay(); updateStreak(); updateStreakDisplay();
-        applySet(data.quiz || [], data.notes || "");
-    } catch (err) { showError("Could not upload that PDF."); }
     finally { pdfBtn.disabled = false; }
 });
 
@@ -353,6 +334,9 @@ function showError(message) {
         else generateBtn.click();
     });
 }
+function sameAnswer(a, b) {
+    return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+}
 function displayQuiz(quiz) {
     output.innerHTML = "";
     quizAnswers = [];
@@ -384,40 +368,6 @@ function displayQuiz(quiz) {
                         note.textContent = "Correct: " + q.correctAnswer;
                         card.appendChild(note);
                     }
-                    addExplainButton(card, q.question, choice, q.correctAnswer);
-                }
-                addFlagButton(card, q.question);
-                if (quizAnswers.length === quiz.length) showQuizResults(quiz);
-            });
-            card.appendChild(btn);
-        });
-        output.appendChild(card);
-    });
-}
-
-function sameAnswer(a, b) {
-    return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
-}
-    output.innerHTML = "";
-    quizAnswers = [];
-    quiz.forEach(function(q, index) {
-        const card = document.createElement("div");
-        card.className = "question-card";
-        card.innerHTML = "<p class='question-text'>" + (index + 1) + ". " + escapeHtml(q.question) + "</p>";
-        q.choices.forEach(function(choice) {
-            const btn = document.createElement("button");
-            btn.className = "choice-btn";
-            btn.textContent = choice;
-            btn.addEventListener("click", function() {
-                if (quizAnswers.some(function(a) { return a.index === index; })) return;
-                const isCorrect = choice === q.correctAnswer;
-                quizAnswers.push({ index: index, question: q.question, chosen: choice, correctAnswer: q.correctAnswer, isCorrect: isCorrect });
-                card.querySelectorAll(".choice-btn").forEach(function(b) {
-                    b.disabled = true;
-                    if (b.textContent === q.correctAnswer) b.classList.add("correct");
-                });
-                if (!isCorrect) {
-                    btn.classList.add("incorrect");
                     addExplainButton(card, q.question, choice, q.correctAnswer);
                 }
                 addFlagButton(card, q.question);
