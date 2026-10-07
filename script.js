@@ -366,6 +366,50 @@ function displayQuiz(quiz) {
             btn.textContent = choice;
             btn.addEventListener("click", function() {
                 if (quizAnswers.some(function(a) { return a.index === index; })) return;
+                const isCorrect = sameAnswer(choice, q.correctAnswer);
+                quizAnswers.push({ index: index, question: q.question, chosen: choice, correctAnswer: q.correctAnswer, isCorrect: isCorrect });
+                let foundCorrect = false;
+                card.querySelectorAll(".choice-btn").forEach(function(b) {
+                    b.disabled = true;
+                    if (sameAnswer(b.textContent, q.correctAnswer)) {
+                        b.classList.add("correct");
+                        foundCorrect = true;
+                    }
+                });
+                if (!isCorrect) {
+                    btn.classList.add("incorrect");
+                    if (!foundCorrect) {
+                        const note = document.createElement("p");
+                        note.className = "right";
+                        note.textContent = "Correct: " + q.correctAnswer;
+                        card.appendChild(note);
+                    }
+                    addExplainButton(card, q.question, choice, q.correctAnswer);
+                }
+                addFlagButton(card, q.question);
+                if (quizAnswers.length === quiz.length) showQuizResults(quiz);
+            });
+            card.appendChild(btn);
+        });
+        output.appendChild(card);
+    });
+}
+
+function sameAnswer(a, b) {
+    return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+}
+    output.innerHTML = "";
+    quizAnswers = [];
+    quiz.forEach(function(q, index) {
+        const card = document.createElement("div");
+        card.className = "question-card";
+        card.innerHTML = "<p class='question-text'>" + (index + 1) + ". " + escapeHtml(q.question) + "</p>";
+        q.choices.forEach(function(choice) {
+            const btn = document.createElement("button");
+            btn.className = "choice-btn";
+            btn.textContent = choice;
+            btn.addEventListener("click", function() {
+                if (quizAnswers.some(function(a) { return a.index === index; })) return;
                 const isCorrect = choice === q.correctAnswer;
                 quizAnswers.push({ index: index, question: q.question, chosen: choice, correctAnswer: q.correctAnswer, isCorrect: isCorrect });
                 card.querySelectorAll(".choice-btn").forEach(function(b) {
