@@ -258,7 +258,26 @@ topicBtn.addEventListener("click", async function() {
 });
 
 pdfBtn.addEventListener("click", async function() {
-    if (!pdfInput.files[0]) { showError("Choose a PDF first."); return; }
+pdfBtn.addEventListener("click", async function() {
+    if (!pdfInput.files.length) { showError("Choose one or more PDFs first."); return; }
+    if (getRemaining() <= 0) { showError("You've used today's free generations. Come back tomorrow for 5 more."); return; }
+    const form = new FormData();
+    for (let i = 0; i < pdfInput.files.length; i++) {
+        form.append("pdf", pdfInput.files[i]);
+    }
+    form.append("questionCount", questionCountInput.value);
+    pdfBtn.disabled = true;
+    setMode("quiz");
+    output.innerHTML = "<p class='loading'>Reading " + pdfInput.files.length + " PDF(s)...</p>";
+    try {
+        const response = await fetch("/upload-pdf", { method: "POST", body: form });
+        const data = await response.json();
+        if (data.error) { showError(data.error); return; }
+        useOneGeneration(); updateLimitDisplay(); updateStreak(); updateStreakDisplay();
+        applySet(data.quiz || [], data.notes || "");
+    } catch (err) { showError("Could not upload those PDFs."); }
+    finally { pdfBtn.disabled = false; }
+});
     if (getRemaining() <= 0) { showError("You've used today's free generations. Come back tomorrow for 5 more."); return; }
     const form = new FormData();
     form.append("pdf", pdfInput.files[0]);
