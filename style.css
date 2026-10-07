@@ -445,3 +445,12 @@ function displayQuiz(quiz) {
 function sameAnswer(a, b) {
     return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
 }
+    .choice-btn.correct {
+    background: #1f8a4c !important;
+    color: white !important;
+}
+.choice-btn.incorrect {
+    background: #8b3a3a !important;
+    color: white !important;
+}
+.right { color: #8dffb0; margin-top: 8px; }
