@@ -165,7 +165,24 @@ app.post("/generate-quiz", async function(req, res) {
     }
 });
 
-app.post("/upload-pdf", upload.single("pdf"), async function(req, res) {
+app.post("/upload-pdf", upload.array("pdf", 8), async function(req, res) {
+    try {
+        const files = req.files || [];
+        if (!files.length) return res.status(400).json({ error: "Choose one or more PDFs first." });
+        let notes = "";
+        for (let i = 0; i < files.length; i++) {
+            const parsed = await pdfParse(files[i].buffer);
+            notes += " " + (parsed.text || "");
+        }
+        notes = notes.replace(/\s+/g, " ").trim().slice(0, 14000);
+        if (notes.length < 50) return res.status(400).json({ error: "Could not read enough text from those PDFs." });
+        const quiz = await makeQuiz(notes, parseInt(req.body.questionCount) || 5);
+        res.json({ notes: notes.slice(0, 3000), quiz: quiz });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Could not read those PDFs. Try smaller text PDFs." });
+    }
+});
     try {
         if (!req.file) return res.status(400).json({ error: "Choose a PDF first." });
         const parsed = await pdfParse(req.file.buffer);
