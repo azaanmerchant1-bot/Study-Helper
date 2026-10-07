@@ -38,10 +38,12 @@
                         <option value="3">3</option>
                         <option value="5" selected>5</option>
                         <option value="10">10</option>
+                        <option value="25">25</option>
                     </select>
                 </div>
                 <button id="generateBtn">Generate Study Set</button>
             </div>
+
             <label class="field-label" for="topicInput">Or make a topic quiz</label>
             <input id="topicInput" type="text" placeholder="Topic, example: photosynthesis">
             <div class="controls">
@@ -67,18 +69,19 @@
                 </div>
                 <button id="topicBtn" class="secondary-btn" type="button">Make topic quiz</button>
             </div>
+
             <div class="controls">
-                <input id="pdfInput" type="file" accept="application/pdf">
+                <input id="pdfInput" type="file" accept="application/pdf" multiple>
                 <button id="pdfBtn" class="secondary-btn" type="button">Upload PDF</button>
             </div>
             <div class="controls">
                 <input id="photoInput" type="file" accept="image/*" capture="environment">
                 <button id="photoBtn" class="secondary-btn" type="button">Upload page photo</button>
-                            <label class="field-label" for="pptxLink">Paste PowerPoint link</label>
+            </div>
+            <label class="field-label" for="pptxLink">Paste PowerPoint link</label>
             <div class="controls">
                 <input id="pptxLink" type="text" placeholder="Paste the copied PowerPoint link">
                 <button id="pptxLinkBtn" class="secondary-btn" type="button">Quiz from link</button>
-            </div>
             </div>
         </section>
 
