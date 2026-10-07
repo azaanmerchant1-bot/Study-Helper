@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 8 * 1024 * 1024 }
+    limits: { fileSize: 12 * 1024 * 1024 }
 });
 const usersFile = path.join(__dirname, "users.json");
 const visitsFile = path.join(__dirname, "visits.json");
@@ -183,18 +183,6 @@ app.post("/upload-pdf", upload.array("pdf", 8), async function(req, res) {
         res.status(500).json({ error: "Could not read those PDFs. Try smaller text PDFs." });
     }
 });
-    try {
-        if (!req.file) return res.status(400).json({ error: "Choose a PDF first." });
-        const parsed = await pdfParse(req.file.buffer);
-        const notes = (parsed.text || "").replace(/\s+/g, " ").trim().slice(0, 12000);
-        if (notes.length < 50) return res.status(400).json({ error: "Could not read enough text from that PDF." });
-        const quiz = await makeQuiz(notes, parseInt(req.body.questionCount) || 5);
-        res.json({ notes: notes.slice(0, 3000), quiz: quiz });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Could not read that PDF. Try a smaller text PDF." });
-    }
-});
 
 app.post("/upload-photo", upload.single("photo"), async function(req, res) {
     try {
@@ -261,7 +249,7 @@ app.post("/pptx-link", async function(req, res) {
             return res.status(400).json({ error: "That link needs a Microsoft login. Share it as Anyone with the link, and turn off Block download." });
         }
 
-        notes = notes.replace(/\s+/g, " ").trim().slice(0, 12000);
+        notes = notes.replace(/\s+/g, " ").trim().slice(0, 14000);
         if (notes.length < 40) return res.status(400).json({ error: "The link opened, but there was not enough slide text." });
         const quiz = await makeQuiz(notes, questionCount);
         res.json({ notes: notes.slice(0, 3000), quiz: quiz });
@@ -316,8 +304,9 @@ app.post("/topic-quiz", async function(req, res) {
 });
 
 async function makeQuiz(notes, questionCount) {
+    const count = Math.min(Math.max(questionCount || 5, 1), 25);
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
-    const prompt = "Based on these notes, create exactly " + questionCount + " multiple-choice quiz questions. Return ONLY valid JSON: [{\"question\":\"q\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"correctAnswer\":\"A\"}]\nNotes: " + notes;
+    const prompt = "Based on these notes, create exactly " + count + " multiple-choice quiz questions. Return ONLY valid JSON: [{\"question\":\"q\",\"choices\":[\"A\",\"B\",\"C\",\"D\"],\"correctAnswer\":\"A\"}]\nNotes: " + notes;
     const result = await model.generateContent(prompt);
     const cleanedText = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
     const start = cleanedText.indexOf("[");
